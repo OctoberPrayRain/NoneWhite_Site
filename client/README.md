@@ -11,4 +11,4 @@ npm run build
 npm run preview
 ```
 
-The Vite dev server proxies `/api` requests to the Express backend on `http://localhost:3000`.
+The Vite dev server proxies `/api` requests to the Rust backend on `http://localhost:3000`.

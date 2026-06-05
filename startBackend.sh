@@ -5,8 +5,9 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 SERVER_DIR="$SCRIPT_DIR/server"
 
-if ! command -v npm >/dev/null 2>&1; then
-  echo "Error: npm is not installed or not available in PATH." >&2
+if ! command -v cargo >/dev/null 2>&1; then
+  echo "Error: cargo is not installed or not available in PATH." >&2
+  echo "Install Rust from https://www.rust-lang.org/tools/install before starting the backend." >&2
   exit 1
 fi
 
@@ -22,10 +23,5 @@ if [ ! -f ".env" ] && [ -f ".env.example" ]; then
   echo "Created server/.env from server/.env.example."
 fi
 
-if [ ! -d "node_modules" ]; then
-  echo "Installing backend dependencies..."
-  npm install
-fi
-
-echo "Starting backend development server..."
-npm run dev
+echo "Starting Rust backend development server..."
+cargo run

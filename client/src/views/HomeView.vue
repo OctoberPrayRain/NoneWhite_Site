@@ -33,7 +33,7 @@
     <article class="feature-card">
       <span>04</span>
       <h2>代理联调</h2>
-      <p>前端通过 <code>/api</code> 代理访问 Express 后端。</p>
+      <p>前端通过 <code>/api</code> 代理访问 Rust 后端。</p>
     </article>
   </section>
 </template>

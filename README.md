@@ -5,8 +5,8 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Status-开发中-yellow" alt="开发中" />
   <img src="https://img.shields.io/badge/Frontend-Vue3-4FC08D" alt="Vue3" />
-  <img src="https://img.shields.io/badge/Backend-Express-000000" alt="Express" />
-  <img src="https://img.shields.io/badge/Database-MySQL-4479A1" alt="MySQL" />
+  <img src="https://img.shields.io/badge/Backend-Rust-000000" alt="Rust" />
+  <img src="https://img.shields.io/badge/Database-PostgreSQL-4169E1" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT" />
 </p>
 
@@ -16,7 +16,7 @@
 
 一个 Galgame 分享站，用户可以浏览 Galgame 详情页、点赞评论、获取网盘下载链接。
 
-**技术栈**：Vue3 + Express + MySQL  
+**技术栈**：Vue3 + Rust + PostgreSQL  
 **架构**：前后端分离
 
 ---
@@ -28,10 +28,10 @@
 ### Phase 1 — 项目骨架（打基础）
 
 - [x] 初始化 Vite + Vue3 前端项目
-- [x] 初始化 Express 后端项目
-- [x] MySQL 建库 & docker-compose.yml
-- [x] 配置 .env、ESLint、gitignore
-- [x] 配置 Husky pre-commit（提交前运行后端 lint）
+- [x] 初始化 Rust 后端项目
+- [x] PostgreSQL 建库 & docker-compose.yml
+- [x] 配置 .env、Rust fmt/check、gitignore
+- [x] 配置 Husky pre-commit（提交前运行 Rust 检查与前端 build）
 - [x] 添加后端一键启动脚本（`startBackend.sh` / `startBackend.bat`）
 - [x] 添加前端一键启动脚本（`startFrontend.sh` / `startFrontend.bat`）
 - [x] 配置 Vite proxy（前端请求 `/api` 自动转发到后端）
@@ -122,19 +122,16 @@ NoneWhite_Site/
 │       ├── App.vue
 │       └── main.js
 │
-├── server/                    # 后端 Express
+├── server/                    # 后端 Rust
 │   ├── .env.example           # 后端环境变量模板
-│   ├── package.json
+│   ├── Cargo.toml
 │   └── src/
-│       ├── config/            # 配置
-│       ├── controllers/       # 控制器
-│       ├── middleware/        # 中间件
-│       ├── models/            # Model
+│       ├── config.rs          # 配置
 │       ├── routes/            # 路由
-│       ├── app.js
-│       └── server.js
+│       ├── main.rs            # 服务入口
+│       └── response.rs        # API 统一响应格式
 │
-├── docker-compose.yml          # MySQL 本地开发服务
+├── docker-compose.yml          # PostgreSQL 本地开发服务
 ├── startBackend.sh             # Linux/macOS 后端启动脚本
 ├── startBackend.bat            # Windows 后端启动脚本
 ├── startFrontend.sh            # Linux/macOS 前端启动脚本
@@ -171,16 +168,15 @@ NoneWhite_Site/
 
 # 或手动启动
 cd server
-npm install
 cp .env.example .env    # 填数据库配置
-npm run dev             # → localhost:3000
+cargo run               # → localhost:3000
 
 # Windows
 startBackend.bat        # → localhost:3000
 
-# MySQL
+# PostgreSQL
 cp .env.example .env
-docker compose up -d    # 启动本地 MySQL，数据保存在 Docker volume: mysql_data
+docker compose up -d    # 启动本地 PostgreSQL，数据保存在 Docker volume: postgres_data
 
 # 前端（脚本会先确保依赖已安装；Vite proxy 已将 /api 请求转发到后端，无需处理 CORS）
 # Linux/macOS
@@ -200,7 +196,7 @@ npm run dev             # → 127.0.0.1:5173
 ### 开发检查
 
 ```bash
-npm run lint            # 运行后端 ESLint
+npm run lint            # 运行 Rust fmt/check 与前端 build
 ```
 
 提交前会通过 Husky 自动执行 `npm run lint`。

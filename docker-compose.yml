@@ -1,22 +1,21 @@
 services:
-  mysql:
-    image: mysql:8.4
-    container_name: nonewhite_mysql
+  postgres:
+    image: postgres:17
+    container_name: nonewhite_postgres
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ${DB_NAME:-nonewhite_site}
-      MYSQL_USER: ${DB_USER:-nonewhite_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-nonewhite_password}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-nonewhite_root_password}
+      POSTGRES_DB: ${POSTGRES_DB:-nonewhite_site}
+      POSTGRES_USER: ${POSTGRES_USER:-nonewhite_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nonewhite_password}
     ports:
-      - '${DB_PORT:-3306}:3306'
+      - '${POSTGRES_PORT:-5432}:5432'
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
-  mysql_data:
+  postgres_data:

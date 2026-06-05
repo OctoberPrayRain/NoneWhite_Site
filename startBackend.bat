@@ -4,9 +4,10 @@ setlocal
 set "SCRIPT_DIR=%~dp0"
 set "SERVER_DIR=%SCRIPT_DIR%server"
 
-where npm >nul 2>nul
+where cargo >nul 2>nul
 if errorlevel 1 (
-  echo Error: npm is not installed or not available in PATH.
+  echo Error: cargo is not installed or not available in PATH.
+  echo Install Rust from https://www.rust-lang.org/tools/install before starting the backend.
   exit /b 1
 )
 
@@ -22,10 +23,5 @@ if not exist ".env" if exist ".env.example" (
   echo Created server\.env from server\.env.example.
 )
 
-if not exist "node_modules" (
-  echo Installing backend dependencies...
-  call npm install || exit /b 1
-)
-
-echo Starting backend development server...
-call npm run dev
+echo Starting Rust backend development server...
+call cargo run
