@@ -28,13 +28,15 @@
 ### Phase 1 — 项目骨架（打基础）
 
 - [ ] 初始化 Vite + Vue3 前端项目
-- [ ] 初始化 Express 后端项目
-- [ ] MySQL 建库 & docker-compose.yml
-- [ ] 配置 .env、ESLint、gitignore
+- [x] 初始化 Express 后端项目
+- [x] MySQL 建库 & docker-compose.yml
+- [x] 配置 .env、ESLint、gitignore
+- [x] 配置 Husky pre-commit（提交前运行后端 lint）
+- [x] 添加后端一键启动脚本（`startBackend.sh` / `startBackend.bat`）
 - [ ] 配置 Vite proxy（前端请求 `/api` 自动转发到后端）
 - [ ] 搭建前端基础布局（Header / Footer / 路由框架）
-- [ ] 约定 API 返回格式（统一 `{ code, data, message }`）
-- [ ] ✅ 前后端联调验证（写一个 test API）
+- [x] 约定 API 返回格式（统一 `{ code, data, message }`）
+- [x] ✅ 前后端联调验证准备（已写后端 `GET /api/test`，待前端接入验证）
 
 ### Phase 2 — 用户系统（前后端可并行）
 
@@ -120,6 +122,8 @@ NoneWhite_Site/
 │       └── main.js
 │
 ├── server/                    # 后端 Express
+│   ├── .env.example           # 后端环境变量模板
+│   ├── package.json
 │   └── src/
 │       ├── config/            # 配置
 │       ├── controllers/       # 控制器
@@ -129,7 +133,10 @@ NoneWhite_Site/
 │       ├── app.js
 │       └── server.js
 │
-├── docker-compose.yml
+├── docker-compose.yml          # MySQL 本地开发服务
+├── startBackend.sh             # Linux/macOS 后端启动脚本
+├── startBackend.bat            # Windows 后端启动脚本
+├── package.json                # 根目录脚本与 Husky 配置
 └── .env.example
 ```
 
@@ -156,16 +163,37 @@ NoneWhite_Site/
 
 ```bash
 # 后端
+# Linux/macOS
+./startBackend.sh       # → localhost:3000
+
+# 或手动启动
 cd server
 npm install
 cp .env.example .env    # 填数据库配置
 npm run dev             # → localhost:3000
+
+# Windows
+startBackend.bat        # → localhost:3000
+
+# MySQL
+cp .env.example .env
+docker compose up -d    # 启动本地 MySQL，数据保存在 Docker volume: mysql_data
 
 # 前端（Vite proxy 已将 /api 请求转发到后端，无需处理 CORS）
 cd client
 npm install
 npm run dev             # → localhost:5173
 ```
+
+> 当前前端项目尚未初始化，`client/` 相关命令需等 Phase 1 前端任务完成后再执行。
+
+### 开发检查
+
+```bash
+npm run lint            # 运行后端 ESLint
+```
+
+提交前会通过 Husky 自动执行 `npm run lint`。
 
 ---
 
