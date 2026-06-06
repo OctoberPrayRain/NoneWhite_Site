@@ -27,8 +27,10 @@
 1. `README.md`
 2. `agent/AGENT_RULES.md`
 3. `agent/COLLABORATION_PLAN.md`
-4. 自己负责区域的源码
-5. 如果任务涉及接口、数据库或跨端字段，还必须阅读本文档中的“统一命名规范”“API 契约”“字段映射表”“环境变量契约”
+4. `agent/roles/README.md`
+5. 自己角色对应的详细实施文档：A 读 `agent/roles/A_BACKEND_API_AUTH.md`，B 读 `agent/roles/B_FRONTEND_PAGE_INTERACTION.md`，C 读 `agent/roles/C_DATABASE_CONTRACTS_DOCS_QA.md`
+6. 自己负责区域的源码
+7. 如果任务涉及接口、数据库或跨端字段，还必须阅读本文档中的“统一命名规范”“API 契约”“字段映射表”“环境变量契约”
 
 开工前必须确认：
 

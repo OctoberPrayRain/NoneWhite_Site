@@ -30,6 +30,7 @@
 - 数据库说明
 - 团队协作约定
 - 三人协作角色所有权
+- 自己角色对应的 `agent/roles/` 详细实施文档
 - 统一变量命名、API 契约和字段映射
 
 不要跳过 README、`agent/COLLABORATION_PLAN.md`，也不要只凭记忆判断项目状态。
@@ -43,6 +44,7 @@
 - `client/` 是否存在
 - `server/` 是否存在
 - `agent/AGENT_RULES.md` / `agent/COLLABORATION_PLAN.md` 是否存在
+- `agent/roles/` 下的角色实施文档是否存在
 - `docker-compose.yml` 是否存在
 - `.env.example` 是否存在
 - 根目录 / 前端的 `package.json` / `package-lock.json`

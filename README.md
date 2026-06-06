@@ -114,7 +114,12 @@
 NoneWhite_Site/
 ├── agent/                     # Agent 协作规则和开发计划
 │   ├── AGENT_RULES.md
-│   └── COLLABORATION_PLAN.md
+│   ├── COLLABORATION_PLAN.md
+│   └── roles/                 # A/B/C 角色详细实施文档
+│       ├── README.md
+│       ├── A_BACKEND_API_AUTH.md
+│       ├── B_FRONTEND_PAGE_INTERACTION.md
+│       └── C_DATABASE_CONTRACTS_DOCS_QA.md
 │
 ├── client/                    # 前端 Vue3
 │   └── src/
