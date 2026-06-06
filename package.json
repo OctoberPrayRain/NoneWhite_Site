@@ -1,0 +1,12 @@
+{
+  "name": "nonewhite-site",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint": "cargo fmt --manifest-path server/Cargo.toml --check && cargo check --manifest-path server/Cargo.toml && npm --prefix client run build",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

@@ -5,8 +5,8 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Status-开发中-yellow" alt="开发中" />
   <img src="https://img.shields.io/badge/Frontend-Vue3-4FC08D" alt="Vue3" />
-  <img src="https://img.shields.io/badge/Backend-Express-000000" alt="Express" />
-  <img src="https://img.shields.io/badge/Database-MySQL-4479A1" alt="MySQL" />
+  <img src="https://img.shields.io/badge/Backend-Rust-000000" alt="Rust" />
+  <img src="https://img.shields.io/badge/Database-PostgreSQL-4169E1" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT" />
 </p>
 
@@ -16,7 +16,7 @@
 
 一个 Galgame 分享站，用户可以浏览 Galgame 详情页、点赞评论、获取网盘下载链接。
 
-**技术栈**：Vue3 + Express + MySQL  
+**技术栈**：Vue3 + Rust + PostgreSQL  
 **架构**：前后端分离
 
 ---
@@ -27,14 +27,17 @@
 
 ### Phase 1 — 项目骨架（打基础）
 
-- [ ] 初始化 Vite + Vue3 前端项目
-- [ ] 初始化 Express 后端项目
-- [ ] MySQL 建库 & docker-compose.yml
-- [ ] 配置 .env、ESLint、gitignore
-- [ ] 配置 Vite proxy（前端请求 `/api` 自动转发到后端）
-- [ ] 搭建前端基础布局（Header / Footer / 路由框架）
-- [ ] 约定 API 返回格式（统一 `{ code, data, message }`）
-- [ ] ✅ 前后端联调验证（写一个 test API）
+- [x] 初始化 Vite + Vue3 前端项目
+- [x] 初始化 Rust 后端项目
+- [x] PostgreSQL 建库 & docker-compose.yml
+- [x] 配置 .env、Rust fmt/check、gitignore
+- [x] 配置 Husky pre-commit（提交前运行 Rust 检查与前端 build）
+- [x] 添加后端一键启动脚本（`startBackend.sh` / `startBackend.bat`）
+- [x] 添加前端一键启动脚本（`startFrontend.sh` / `startFrontend.bat`）
+- [x] 配置 Vite proxy（前端请求 `/api` 自动转发到后端）
+- [x] 搭建前端基础布局（Header / Footer / 路由框架）
+- [x] 约定 API 返回格式（统一 `{ code, data, message }`）
+- [x] ✅ 前后端联调验证（后端 `GET /api/test`，前端 `/test-api` 已接入验证）
 
 ### Phase 2 — 用户系统（前后端可并行）
 
@@ -109,27 +112,40 @@
 
 ```
 NoneWhite_Site/
+├── agent/                     # Agent 协作规则和开发计划
+│   ├── AGENT_RULES.md
+│   ├── COLLABORATION_PLAN.md
+│   └── roles/                 # A/B/C 角色详细实施文档
+│       ├── README.md
+│       ├── A_BACKEND_API_AUTH.md
+│       ├── B_FRONTEND_PAGE_INTERACTION.md
+│       └── C_DATABASE_CONTRACTS_DOCS_QA.md
+│
 ├── client/                    # 前端 Vue3
 │   └── src/
 │       ├── api/               # 请求封装
 │       ├── components/        # 公共组件
 │       ├── router/            # 路由
-│       ├── stores/            # Pinia
+│       ├── stores/            # 状态管理（如引入 Pinia 或轻量 store 时创建）
 │       ├── views/             # 页面
 │       ├── App.vue
 │       └── main.js
 │
-├── server/                    # 后端 Express
+├── server/                    # 后端 Rust
+│   ├── .env.example           # 后端环境变量模板
+│   ├── Cargo.toml
 │   └── src/
-│       ├── config/            # 配置
-│       ├── controllers/       # 控制器
-│       ├── middleware/        # 中间件
-│       ├── models/            # Model
+│       ├── config.rs          # 配置
 │       ├── routes/            # 路由
-│       ├── app.js
-│       └── server.js
+│       ├── main.rs            # 服务入口
+│       └── response.rs        # API 统一响应格式
 │
-├── docker-compose.yml
+├── docker-compose.yml          # PostgreSQL 本地开发服务
+├── startBackend.sh             # Linux/macOS 后端启动脚本
+├── startBackend.bat            # Windows 后端启动脚本
+├── startFrontend.sh            # Linux/macOS 前端启动脚本
+├── startFrontend.bat           # Windows 前端启动脚本
+├── package.json                # 根目录脚本与 Husky 配置
 └── .env.example
 ```
 
@@ -139,10 +155,10 @@ NoneWhite_Site/
 
 | 表名 | 主要字段 | 说明 |
 |---|---|---|
-| `users` | id, username, email, password_hash, avatar, role | 用户 |
+| `users` | id, username, email, password_hash, avatar_url, role | 用户 |
 | `games` | id, title, developer, publisher, release_date, description, cover_url, category_id, search_text, likes_count, favorites_count | 游戏 |
 | `categories` | id, name, slug | 分类 |
-| `tags` | id, name | 标签 |
+| `tags` | id, name, slug | 标签 |
 | `game_tags` | game_id, tag_id | 游戏-标签关联 |
 | `comments` | id, user_id, game_id, content, parent_id, created_at | 评论 |
 | `likes` | user_id, game_id (联合唯一) | 点赞 |
@@ -156,20 +172,49 @@ NoneWhite_Site/
 
 ```bash
 # 后端
-cd server
-npm install
-cp .env.example .env    # 填数据库配置
-npm run dev             # → localhost:3000
+# Linux/macOS
+./startBackend.sh       # → localhost:3000
 
-# 前端（Vite proxy 已将 /api 请求转发到后端，无需处理 CORS）
+# 或手动启动
+cd server
+cp .env.example .env    # 填数据库配置
+cargo run               # → localhost:3000
+
+# Windows
+startBackend.bat        # → localhost:3000
+
+# PostgreSQL
+cp .env.example .env
+docker compose up -d    # 启动本地 PostgreSQL，数据保存在 Docker volume: postgres_data
+
+# 前端（脚本会先确保依赖已安装；Vite proxy 已将 /api 请求转发到后端，无需处理 CORS）
+# Linux/macOS
+./startFrontend.sh      # → 127.0.0.1:5173
+
+# Windows
+startFrontend.bat       # → 127.0.0.1:5173
+
+# 或手动启动
 cd client
 npm install
-npm run dev             # → localhost:5173
+npm run dev             # → 127.0.0.1:5173
 ```
+
+> 前端 Phase 1 已完成：`client/` 已初始化，开发环境会将 `/api` 请求代理到后端。
+
+### 开发检查
+
+```bash
+npm run lint            # 运行 Rust fmt/check 与前端 build
+```
+
+提交前会通过 Husky 自动执行 `npm run lint`。
 
 ---
 
 ## 团队分工
+
+三人或多 Agent 并行开发前，必须先阅读 [`agent/COLLABORATION_PLAN.md`](agent/COLLABORATION_PLAN.md)，按其中的角色所有权、变量命名、API 契约、数据库字段映射和交接规则执行。
 
 | 角色 | 负责内容 |
 |---|---|
