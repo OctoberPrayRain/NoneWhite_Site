@@ -17,9 +17,9 @@
 
 每次接到任务时，必须按以下顺序执行。
 
-### 1. 阅读 README
+### 1. 阅读 README 和 Agent 文档
 
-优先阅读项目根目录的 `README.md` 和 `COLLABORATION_PLAN.md`，理解：
+优先阅读项目根目录的 `README.md` 和 `agent/COLLABORATION_PLAN.md`，理解：
 
 - 项目目标
 - 技术栈
@@ -32,7 +32,7 @@
 - 三人协作角色所有权
 - 统一变量命名、API 契约和字段映射
 
-不要跳过 README、`COLLABORATION_PLAN.md`，也不要只凭记忆判断项目状态。
+不要跳过 README、`agent/COLLABORATION_PLAN.md`，也不要只凭记忆判断项目状态。
 
 ### 2. 检查当前项目内容
 
@@ -42,6 +42,7 @@
 
 - `client/` 是否存在
 - `server/` 是否存在
+- `agent/AGENT_RULES.md` / `agent/COLLABORATION_PLAN.md` 是否存在
 - `docker-compose.yml` 是否存在
 - `.env.example` 是否存在
 - 根目录 / 前端的 `package.json` / `package-lock.json`

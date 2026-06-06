@@ -112,6 +112,10 @@
 
 ```
 NoneWhite_Site/
+├── agent/                     # Agent 协作规则和开发计划
+│   ├── AGENT_RULES.md
+│   └── COLLABORATION_PLAN.md
+│
 ├── client/                    # 前端 Vue3
 │   └── src/
 │       ├── api/               # 请求封装
@@ -205,7 +209,7 @@ npm run lint            # 运行 Rust fmt/check 与前端 build
 
 ## 团队分工
 
-三人或多 Agent 并行开发前，必须先阅读 [`COLLABORATION_PLAN.md`](COLLABORATION_PLAN.md)，按其中的角色所有权、变量命名、API 契约、数据库字段映射和交接规则执行。
+三人或多 Agent 并行开发前，必须先阅读 [`agent/COLLABORATION_PLAN.md`](agent/COLLABORATION_PLAN.md)，按其中的角色所有权、变量命名、API 契约、数据库字段映射和交接规则执行。
 
 | 角色 | 负责内容 |
 |---|---|

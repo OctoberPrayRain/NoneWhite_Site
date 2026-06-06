@@ -1,6 +1,6 @@
 # NoneWhite_Site 三人协作实现计划
 
-> 本文档是 `NoneWhite_Site` 的协作开发入口文档。任何人类开发者或 Agent 在开始写代码前，必须先阅读 `README.md`、`AGENT_RULES.md` 和本文档，再根据自己的角色读取对应源码。
+> 本文档是 `NoneWhite_Site` 的协作开发入口文档。任何人类开发者或 Agent 在开始写代码前，必须先阅读 `README.md`、`agent/AGENT_RULES.md` 和本文档，再根据自己的角色读取对应源码。
 
 ---
 
@@ -25,8 +25,8 @@
 每个 Agent 接到任务后，必须按顺序阅读：
 
 1. `README.md`
-2. `AGENT_RULES.md`
-3. `COLLABORATION_PLAN.md`
+2. `agent/AGENT_RULES.md`
+3. `agent/COLLABORATION_PLAN.md`
 4. 自己负责区域的源码
 5. 如果任务涉及接口、数据库或跨端字段，还必须阅读本文档中的“统一命名规范”“API 契约”“字段映射表”“环境变量契约”
 
@@ -174,8 +174,8 @@ client/src/utils/
 
 ```txt
 README.md
-AGENT_RULES.md
-COLLABORATION_PLAN.md
+agent/AGENT_RULES.md
+agent/COLLABORATION_PLAN.md
 .env.example
 docker-compose.yml
 ```
@@ -195,8 +195,8 @@ docs/database/
 
 ```txt
 README.md
-AGENT_RULES.md
-COLLABORATION_PLAN.md
+agent/AGENT_RULES.md
+agent/COLLABORATION_PLAN.md
 package.json
 client/package.json
 client/package-lock.json
@@ -259,7 +259,7 @@ fix/backend-api-response
 - 不要把无关的前端、后端、文档、格式化混在一个提交里。
 - 如果一次提交是垂直切片，必须同时包含契约、实现、测试和文档更新。
 
-提交信息使用 `AGENT_RULES.md` 中的 Conventional Commits 风格：
+提交信息使用 `agent/AGENT_RULES.md` 中的 Conventional Commits 风格：
 
 ```txt
 type(scope): 中文简述
@@ -1836,8 +1836,8 @@ Task: 简述任务
 ## Start Checklist
 
 - [ ] 已阅读 `README.md`
-- [ ] 已阅读 `AGENT_RULES.md`
-- [ ] 已阅读 `COLLABORATION_PLAN.md`
+- [ ] 已阅读 `agent/AGENT_RULES.md`
+- [ ] 已阅读 `agent/COLLABORATION_PLAN.md`
 - [ ] 已检查当前 Git 分支和工作区状态
 - [ ] 已确认自己是角色 A / B / C
 - [ ] 已确认要改的文件属于自己的所有权范围
