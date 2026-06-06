@@ -42,12 +42,17 @@
 ### Phase 2 — 用户系统（前后端可并行）
 
 **后端：**
-- [ ] User Model + 建表
-- [ ] 注册 / 登录 API（JWT + bcrypt）
-- [ ] 认证中间件
-- [ ] 获取 / 更新个人资料 API
-- [ ] 修改密码 API
-- [ ] 头像上传 API
+- [x] User Model + 建表（已添加 `users` SQL migration 与后端用户数据层基础）
+- [x] 注册 / 登录 API（代码已实现 `POST /api/auth/register` / `POST /api/auth/login`；DB happy path 待 PostgreSQL 环境联调）
+- [x] 认证中间件（代码已实现 `Authorization: Bearer <token>` 校验；DB 用户查询 happy path 待联调）
+- [x] 获取 / 更新个人资料 API（代码已实现 `GET/PATCH /api/users/me`，资料更新仅允许 `username`；DB happy path 待联调）
+- [x] 修改密码 API（代码已实现 `PATCH /api/users/me/password`；DB happy path 待联调）
+- [ ] 头像上传 API（缺：存储策略、上传目录/对象存储、URL 形式、大小限制、文件类型白名单）
+
+**Phase 2 后端待补 / 待联调：**
+- [ ] 在可用 PostgreSQL 环境中执行 `server/migrations/20260605000000_create_users.sql`。
+- [ ] 跑通注册 → 登录 → `GET /api/users/me` → 更新用户名 → 修改密码的数据库 happy path。
+- [ ] 确认头像上传策略后实现头像上传 API，并决定是否复用 Phase 5 文件上传接口。
 
 **前端：**
 - [ ] 注册 / 登录页面
@@ -115,6 +120,7 @@ NoneWhite_Site/
 ├── agent/                     # Agent 协作规则和开发计划
 │   ├── AGENT_RULES.md
 │   ├── COLLABORATION_PLAN.md
+│   ├── JOURNALIST/            # A/B/C 角色日志与交接记录
 │   └── roles/                 # A/B/C 角色详细实施文档
 │       ├── README.md
 │       ├── A_BACKEND_API_AUTH.md
@@ -134,9 +140,18 @@ NoneWhite_Site/
 ├── server/                    # 后端 Rust
 │   ├── .env.example           # 后端环境变量模板
 │   ├── Cargo.toml
+│   ├── migrations/            # SQL migration 文件
 │   └── src/
 │       ├── config.rs          # 配置
+│       ├── db.rs              # PostgreSQL 连接池
+│       ├── dto/               # 请求/响应 DTO
+│       ├── error.rs           # API 错误码与统一错误响应
+│       ├── middleware/        # 认证中间件/提取逻辑
+│       ├── models/            # 数据库行模型
+│       ├── repositories/      # SQL 数据访问层
 │       ├── routes/            # 路由
+│       ├── services/          # 业务逻辑、校验、密码哈希、JWT
+│       ├── state.rs           # Axum 共享状态
 │       ├── main.rs            # 服务入口
 │       └── response.rs        # API 统一响应格式
 │
@@ -187,6 +202,10 @@ startBackend.bat        # → localhost:3000
 cp .env.example .env
 docker compose up -d    # 启动本地 PostgreSQL，数据保存在 Docker volume: postgres_data
 
+# 应用 SQL migration（当前项目使用 SQL 文件，尚未引入 migration 工具）
+set -a && . ./.env && set +a
+psql "$DATABASE_URL" -f server/migrations/20260605000000_create_users.sql
+
 # 前端（脚本会先确保依赖已安装；Vite proxy 已将 /api 请求转发到后端，无需处理 CORS）
 # Linux/macOS
 ./startFrontend.sh      # → 127.0.0.1:5173
@@ -201,6 +220,27 @@ npm run dev             # → 127.0.0.1:5173
 ```
 
 > 前端 Phase 1 已完成：`client/` 已初始化，开发环境会将 `/api` 请求代理到后端。
+
+### Phase 2 后端 API 示例
+
+```bash
+# 注册
+curl -X POST http://127.0.0.1:3000/api/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"alice","email":"alice@example.com","password":"password123"}'
+
+# 登录（返回 token、tokenType=Bearer、expiresIn、user）
+curl -X POST http://127.0.0.1:3000/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"alice@example.com","password":"password123"}'
+
+# 当前用户
+curl http://127.0.0.1:3000/api/users/me \
+  -H 'Authorization: Bearer <token>'
+```
+
+> 头像上传 API 仍待确认存储策略（上传目录、URL 形式、大小限制、文件类型）后实现。
+> 当前环境没有可用 Docker daemon / `docker compose` / `psql`，因此 Phase 2 auth/user API 已完成代码、编译、单元测试和非 DB curl 回归；注册/登录/资料/改密的数据库 happy path 仍需在具备 PostgreSQL 的环境中补充联调记录。
 
 ### 开发检查
 

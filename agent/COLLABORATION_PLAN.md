@@ -29,8 +29,9 @@
 3. `agent/COLLABORATION_PLAN.md`
 4. `agent/roles/README.md`
 5. 自己角色对应的详细实施文档：A 读 `agent/roles/A_BACKEND_API_AUTH.md`，B 读 `agent/roles/B_FRONTEND_PAGE_INTERACTION.md`，C 读 `agent/roles/C_DATABASE_CONTRACTS_DOCS_QA.md`
-6. 自己负责区域的源码
-7. 如果任务涉及接口、数据库或跨端字段，还必须阅读本文档中的“统一命名规范”“API 契约”“字段映射表”“环境变量契约”
+6. 自己角色对应的日志文档：A 读 `agent/JOURNALIST/A_BACKEND_API_AUTH/A_BACKEND_API_AUTH_LOG.md`，B 读 `agent/JOURNALIST/B_FRONTEND_PAGE_INTERACTION/B_FRONTEND_PAGE_INTERACTION_LOG.md`，C 读 `agent/JOURNALIST/C_DATABASE_CONTRACTS_DOCS_QA/C_DATABASE_CONTRACTS_DOCS_QA_LOG.md`
+7. 自己负责区域的源码
+8. 如果任务涉及接口、数据库或跨端字段，还必须阅读本文档中的“统一命名规范”“API 契约”“字段映射表”“环境变量契约”
 
 开工前必须确认：
 
@@ -1770,6 +1771,17 @@ npm run lint
 | 未开始 | `[ ]` | 不要写已完成 |
 | 进行中 | 文档说明“已准备 / 待联调” | 不要勾选 |
 | 已完成 | `[x]` 并有代码和验证 | 不要无验证勾选 |
+
+### 18.1 JOURNALIST 日志写入规则
+
+`agent/JOURNALIST/**/**_LOG.md` 是跨角色交接的时间线日志，必须只追加、不重写历史。
+
+规则：
+
+- 新增 handoff、QA evidence、known limits 时，只能在对应日志文件末尾追加新区块。
+- 禁止删除、重排、改写旧日志内容；旧记录即使有遗漏，也只能追加补充说明或更正说明。
+- 禁止把 JWT、密码、JWT secret、真实 `.env` 值、数据库 dump 或其他敏感信息写入日志。
+- 每次追加日志必须写清任务 ID、变更文件、验证命令和仍未完成事项。
 
 ---
 

@@ -1,6 +1,14 @@
-mod config;
-mod response;
-mod routes;
+pub mod config;
+pub mod db;
+pub mod dto;
+pub mod error;
+pub mod middleware;
+pub mod models;
+pub mod repositories;
+pub mod response;
+pub mod routes;
+pub mod services;
+pub mod state;
 
 use axum::Router;
 use tokio::net::TcpListener;
@@ -12,10 +20,15 @@ async fn main() {
     dotenvy::dotenv().ok();
     tracing_subscriber::fmt::init();
 
+    let config = config::AppConfig::from_env();
+    let db_pool = db::create_pool(&config.database).expect("failed to create database pool");
+    let address = config.server.address();
+    let state = state::AppState { config, db_pool };
+
     let app = Router::new()
         .merge(routes::api_routes())
-        .fallback(routes::not_found);
-    let address = config::server_address();
+        .fallback(routes::not_found)
+        .with_state(state);
     let listener = TcpListener::bind(&address)
         .await
         .expect("failed to bind backend server address");
