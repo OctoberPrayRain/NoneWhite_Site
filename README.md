@@ -117,7 +117,7 @@ NoneWhite_Site/
 │       ├── api/               # 请求封装
 │       ├── components/        # 公共组件
 │       ├── router/            # 路由
-│       ├── stores/            # Pinia
+│       ├── stores/            # 状态管理（如引入 Pinia 或轻量 store 时创建）
 │       ├── views/             # 页面
 │       ├── App.vue
 │       └── main.js
@@ -146,10 +146,10 @@ NoneWhite_Site/
 
 | 表名 | 主要字段 | 说明 |
 |---|---|---|
-| `users` | id, username, email, password_hash, avatar, role | 用户 |
+| `users` | id, username, email, password_hash, avatar_url, role | 用户 |
 | `games` | id, title, developer, publisher, release_date, description, cover_url, category_id, search_text, likes_count, favorites_count | 游戏 |
 | `categories` | id, name, slug | 分类 |
-| `tags` | id, name | 标签 |
+| `tags` | id, name, slug | 标签 |
 | `game_tags` | game_id, tag_id | 游戏-标签关联 |
 | `comments` | id, user_id, game_id, content, parent_id, created_at | 评论 |
 | `likes` | user_id, game_id (联合唯一) | 点赞 |
@@ -204,6 +204,8 @@ npm run lint            # 运行 Rust fmt/check 与前端 build
 ---
 
 ## 团队分工
+
+三人或多 Agent 并行开发前，必须先阅读 [`COLLABORATION_PLAN.md`](COLLABORATION_PLAN.md)，按其中的角色所有权、变量命名、API 契约、数据库字段映射和交接规则执行。
 
 | 角色 | 负责内容 |
 |---|---|
