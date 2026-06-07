@@ -96,3 +96,30 @@ Reason:
 - DB-backed happy paths are still not verified because this environment lacks usable Docker Compose/PostgreSQL/psql.
 Append-only Note: This entry corrects the previous README-status wording by appending a new log block; older log entries were not rewritten.
 Follow-up Needed: Once PostgreSQL is available, append DB happy path QA evidence and update any remaining README caveats if the full flow passes.
+
+## Handoff - Role C - 2026-06-07
+
+Sub-lane: C3 Env/Docs/README, C4 Integration QA
+Task IDs: C-03.2, C-04.1, C-04.2, INT-03
+Scenario: Role C non-blocked API QA documentation closeout after backend auth/user implementation.
+Changed Files:
+- `README.md`: documented current backend env loading precedence; added explicit expected HTTP status and `body.code` outcomes for register, login, current-user, invalid-email register, wrong-password login, and missing-token current-user curl examples; clarified current Docker/psql environment limitation.
+- `agent/JOURNALIST/C_DATABASE_CONTRACTS_DOCS_QA/C_DATABASE_CONTRACTS_DOCS_QA_LOG.md`: appended this handoff/QA evidence block.
+Contracts Created: none.
+Contracts Changed:
+- README now records current observed backend env precedence as shell environment > root `.env` > `server/.env` > code defaults, because `server/src/main.rs` loads `../.env` before `server/.env` and `dotenvy` does not overwrite existing variables by default.
+- Collaboration preference still recommends `server/.env` as the primary backend config source; this remains a documented implementation-contract mismatch for a future backend code task, not a Role C docs-only code change.
+Verification:
+- `docker compose config`: passed and rendered the PostgreSQL service configuration.
+- `docker ps`: failed because Docker daemon socket is unavailable at `/var/run/docker.sock`.
+- `psql --version`: failed because `psql` is not installed.
+- `cargo test --manifest-path server/Cargo.toml`: passed, 8 tests.
+- `npm run lint`: passed; Rust fmt/check and frontend Vite production build completed.
+Manual/API/UI QA:
+- No PostgreSQL-backed curl happy path was run in this environment because Docker daemon and `psql` are unavailable.
+- README curl examples document expected contract outcomes only; no real JWT, password, secret, database dump, or `.env` value was recorded.
+Known Limits:
+- DB happy path remains pending: run migration, register, login, `GET /api/users/me`, update username, and change password in a working PostgreSQL environment.
+- Avatar upload remains blocked by unresolved storage strategy, upload target, URL form, size limit, and file type whitelist.
+Result: Pass for C-03.2/C-04.1/C-04.2 documentation closeout and INT-03 available regression checks; DB-backed integration remains blocked by environment.
+Follow-up Needed: Backend owner should decide whether to change env loading so `server/.env` overrides root `.env`; Role C should append DB happy path evidence once PostgreSQL and `psql` are available.

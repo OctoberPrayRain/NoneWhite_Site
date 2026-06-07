@@ -221,26 +221,47 @@ npm run dev             # → 127.0.0.1:5173
 
 > 前端 Phase 1 已完成：`client/` 已初始化，开发环境会将 `/api` 请求代理到后端。
 
+### 后端环境变量加载顺序
+
+当前后端在启动阶段集中加载环境变量。通过 `./startBackend.sh` 或手动 `cd server && cargo run` 启动时，入口会先尝试加载根目录 `.env`，再尝试加载 `server/.env`；`dotenvy` 默认不覆盖已存在变量，因此同名变量当前实际优先级为：shell 环境变量 > 根目录 `.env` > `server/.env` > 代码默认值。
+
+协作契约推荐后续以后端 `server/.env` 作为主要后端配置来源；在代码优先级调整前，如两个文件存在同名变量，请以当前实际加载顺序为准，避免在两个 `.env` 中写入冲突值。不要提交真实 `.env`、JWT secret、数据库密码或 token。
+
 ### Phase 2 后端 API 示例
 
+以下成功路径需要先启动 PostgreSQL、应用 `server/migrations/20260605000000_create_users.sql`，并启动后端服务。示例只记录占位 token，不能把真实 JWT 写入 README 或协作日志。
+
 ```bash
-# 注册
-curl -X POST http://127.0.0.1:3000/api/auth/register \
+# 注册：预期 HTTP 201，body.code=0
+curl -i -X POST http://127.0.0.1:3000/api/auth/register \
   -H 'Content-Type: application/json' \
   -d '{"username":"alice","email":"alice@example.com","password":"password123"}'
 
-# 登录（返回 token、tokenType=Bearer、expiresIn、user）
-curl -X POST http://127.0.0.1:3000/api/auth/login \
+# 登录：预期 HTTP 200，body.code=0，返回 token、tokenType="Bearer"、expiresIn、user
+curl -i -X POST http://127.0.0.1:3000/api/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"alice@example.com","password":"password123"}'
 
-# 当前用户
-curl http://127.0.0.1:3000/api/users/me \
+# 当前用户：预期 HTTP 200，body.code=0
+curl -i http://127.0.0.1:3000/api/users/me \
   -H 'Authorization: Bearer <token>'
+
+# 注册无效邮箱：预期 HTTP 400，body.code=40002，message="Email is invalid"
+curl -i -X POST http://127.0.0.1:3000/api/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"alice","email":"not-an-email","password":"password123"}'
+
+# 登录错误密码：需先有 alice@example.com；预期 HTTP 401，body.code=40101，message="Invalid email or password"
+curl -i -X POST http://127.0.0.1:3000/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"alice@example.com","password":"wrong-password"}'
+
+# 当前用户缺少 token：预期 HTTP 401，body.code=40102，message="Authentication is required"
+curl -i http://127.0.0.1:3000/api/users/me
 ```
 
 > 头像上传 API 仍待确认存储策略（上传目录、URL 形式、大小限制、文件类型）后实现。
-> 当前环境没有可用 Docker daemon / `docker compose` / `psql`，因此 Phase 2 auth/user API 已完成代码、编译、单元测试和非 DB curl 回归；注册/登录/资料/改密的数据库 happy path 仍需在具备 PostgreSQL 的环境中补充联调记录。
+> 当前环境可以解析 `docker compose config`，但没有可用 Docker daemon / `psql`，因此 Phase 2 auth/user API 已完成代码、编译、单元测试和非 DB curl 回归；注册/登录/资料/改密的数据库 happy path 仍需在具备 PostgreSQL 的环境中补充联调记录。
 
 ### 开发检查
 
