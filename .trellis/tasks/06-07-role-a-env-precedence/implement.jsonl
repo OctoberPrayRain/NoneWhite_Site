@@ -1,0 +1,2 @@
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Use Trellis project guidance for changes that affect backend configuration and runtime behavior."}
+{"file":".trellis/tasks/06-07-role-a-env-precedence/research/env-precedence.md","reason":"Summarizes Role A env precedence contract and dotenvy override behavior for implementation."}

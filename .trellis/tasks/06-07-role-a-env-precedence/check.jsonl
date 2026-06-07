@@ -1,0 +1,2 @@
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Check that the backend configuration change stays within the documented role and integration boundaries."}
+{"file":".trellis/tasks/06-07-role-a-env-precedence/research/env-precedence.md","reason":"Check implementation and tests against the documented env precedence contract."}
