@@ -42,3 +42,32 @@ Known Limits:
 - Avatar upload remains blocked by storage strategy.
 Conflict Notes: touched shared files `server/Cargo.toml`, `server/Cargo.lock`, `server/src/routes/mod.rs`, and `server/src/main.rs`.
 Next Role Needed: Role C should run PostgreSQL migration and DB-backed curl happy paths in an environment with PostgreSQL, then update README checkboxes if integration passes.
+
+## Handoff - Role A - 2026-06-07
+
+Sub-lane: A1 Config/State/DB
+Task IDs: A-01.2
+Scenario: Backend env precedence now matches the Phase 2 collaboration contract.
+Changed Files:
+- `server/src/main.rs`: replaced ad hoc dotenv loading with a focused `load_env_files()` helper that loads `server/.env` before root `.env`, using `CARGO_MANIFEST_DIR` so launcher scripts and manifest-based cargo commands resolve the same files.
+- `README.md`: updated the backend env precedence section to match the fixed behavior.
+- `.trellis/tasks/06-07-role-a-env-precedence/resume.md`: recorded the required pre-implementation resume marker.
+Contracts Consumed:
+- `agent/COLLABORATION_PLAN.md` environment variable contract: backend `server/.env` should be the primary backend config source, with root `.env` for project defaults.
+- `.trellis/tasks/06-07-role-a-env-precedence/prd.md`: A-01.2 scenario contract for server override, root fallback, and `/api/test` regression.
+Contracts Changed: none in API shape; backend env loading behavior now aligns with the existing contract.
+Verification:
+- TDD red phase: `cargo test --manifest-path server/Cargo.toml load_env_files` first failed because `load_env_files_from_paths` did not exist.
+- `cargo fmt --manifest-path server/Cargo.toml --check`: passed.
+- `cargo check --manifest-path server/Cargo.toml`: passed.
+- `cargo test --manifest-path server/Cargo.toml`: passed, 10 tests.
+- `npm run lint`: passed; Rust fmt/check and frontend Vite production build completed.
+- `docker compose config`: passed.
+- `docker ps`: failed because Docker daemon socket is unavailable at `/var/run/docker.sock`.
+- `psql --version`: failed because `psql` is not installed.
+Manual/API QA:
+- `PORT=3017 cargo run --manifest-path server/Cargo.toml`, then `curl -i http://127.0.0.1:3017/api/test`: HTTP 200 with `code=0` and the existing backend test API response.
+Known Limits:
+- DB happy path for register/login/current-user/profile/password remains blocked in this environment because Docker daemon and `psql` are unavailable.
+- Avatar upload remains blocked by storage strategy.
+Next Role Needed: In a PostgreSQL-capable environment, Role C should run the DB-backed happy path and append evidence; no further Role A env precedence work is pending.

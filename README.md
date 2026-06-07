@@ -223,9 +223,9 @@ npm run dev             # → 127.0.0.1:5173
 
 ### 后端环境变量加载顺序
 
-当前后端在启动阶段集中加载环境变量。通过 `./startBackend.sh` 或手动 `cd server && cargo run` 启动时，入口会先尝试加载根目录 `.env`，再尝试加载 `server/.env`；`dotenvy` 默认不覆盖已存在变量，因此同名变量当前实际优先级为：shell 环境变量 > 根目录 `.env` > `server/.env` > 代码默认值。
+当前后端在启动阶段集中加载环境变量。入口会先加载 `server/.env`，再加载根目录 `.env` 作为项目级 fallback；`dotenvy` 默认不覆盖已存在变量，因此同名变量当前实际优先级为：shell 环境变量 > `server/.env` > 根目录 `.env` > 代码默认值。
 
-协作契约推荐后续以后端 `server/.env` 作为主要后端配置来源；在代码优先级调整前，如两个文件存在同名变量，请以当前实际加载顺序为准，避免在两个 `.env` 中写入冲突值。不要提交真实 `.env`、JWT secret、数据库密码或 token。
+后端启动代码通过 `CARGO_MANIFEST_DIR` 定位 `server/.env` 与根目录 `.env`，因此通过 `./startBackend.sh`、`startBackend.bat` 或 `cargo run --manifest-path server/Cargo.toml` 启动时使用相同优先级。不要提交真实 `.env`、JWT secret、数据库密码或 token。
 
 ### Phase 2 后端 API 示例
 
