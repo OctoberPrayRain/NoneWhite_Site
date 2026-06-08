@@ -1,0 +1,3 @@
+{"file":".trellis/spec/frontend/index.md","reason":"Frontend status wording must follow current Vue/Vite conventions and blocked avatar/favorites constraints."}
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Verification and forbidden-pattern rules for frontend docs/status updates."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"README status must avoid cross-layer overclaims about DB/API/frontend completion."}
