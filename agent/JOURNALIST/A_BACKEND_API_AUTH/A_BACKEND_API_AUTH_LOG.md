@@ -71,3 +71,48 @@ Known Limits:
 - DB happy path for register/login/current-user/profile/password remains blocked in this environment because Docker daemon and `psql` are unavailable.
 - Avatar upload remains blocked by storage strategy.
 Next Role Needed: In a PostgreSQL-capable environment, Role C should run the DB-backed happy path and append evidence; no further Role A env precedence work is pending.
+
+## Handoff - Role A - 2026-06-08
+
+Sub-lane: A5 Authenticated User Flow, A1 Config/State/DB usability
+Task IDs: A-07 avatar upload completion, local DB setup support
+Changed Files:
+- `server/Cargo.toml`: enabled Axum multipart and Tokio fs features for avatar upload.
+- `server/src/config.rs`: added `UploadConfig` with `UPLOAD_DIR`, `UPLOAD_PUBLIC_BASE_URL`, and `MAX_AVATAR_SIZE_BYTES`.
+- `server/src/dto/users.rs`: added `AvatarUploadResponse`.
+- `server/src/error.rs`: added avatar upload and uploaded-file error codes.
+- `server/src/services/user_service.rs`: added avatar validation and avatar URL update service.
+- `server/src/routes/users.rs`: registered `POST /api/users/me/avatar` multipart handler.
+- `server/src/routes/uploads.rs`, `server/src/routes/mod.rs`: added `/uploads/avatars/{file_name}` static avatar serving.
+- `.env.example`, `server/.env.example`: documented upload env defaults.
+- `.gitignore`: ignored `server/uploads/`.
+- `setupDatabase.sh`, `setupDatabase.bat`: added cross-platform Docker-based PostgreSQL startup and users migration script.
+- `README.md`: documented setup scripts, upload strategy, and avatar curl example.
+
+Contracts Consumed:
+- `agent/COLLABORATION_PLAN.md` section 10.6 avatar upload contract: `POST /api/users/me/avatar`, multipart field `avatar`, response `{ "avatarUrl": string }`.
+- Phase 2 local upload strategy: `server/uploads/avatars/`, public URL `/uploads/avatars/...`, max 2 MiB, PNG/JPEG/WebP whitelist.
+
+Contracts Changed: Avatar storage strategy is now defined for local development. Phase 5 can later decide whether to reuse or upgrade this file-upload path.
+
+Verification:
+- `cargo fmt --manifest-path server/Cargo.toml`: applied formatting.
+- `cargo test --manifest-path server/Cargo.toml`: passed, 15 tests.
+- `npm run lint`: passed; Rust fmt/check and frontend Vite production build completed.
+- `git diff --check`: passed after removing README trailing whitespace; remaining output is Windows LF-to-CRLF warnings only.
+- `where docker`: failed because Docker is not installed or not available in PATH on this machine.
+- `where psql`: failed because `psql` is not installed or not available in PATH on this machine.
+- `sh -n setupDatabase.sh`: not run because `sh` is not available on this Windows environment.
+
+Manual/API QA:
+- DB-backed avatar upload curl was not run in this environment because Docker and `psql` are not available.
+
+Known Limits:
+- Register/login/current-user/profile/password/avatar DB happy path still requires a PostgreSQL-capable machine to run `setupDatabase` and curl through the real backend.
+- Local uploaded avatar files are intentionally untracked under `server/uploads/`.
+
+Conflict Notes:
+- Touched shared backend files `server/Cargo.toml`, `server/src/routes/mod.rs`, `server/src/config.rs`, `.env.example`, `server/.env.example`, and `README.md`.
+
+Next Role Needed:
+- Role C should run the DB-backed happy path using `setupDatabase.sh` or `setupDatabase.bat`, append evidence, and decide whether README DB pending checkboxes can be marked complete.

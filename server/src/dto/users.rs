@@ -28,6 +28,12 @@ pub struct ChangePasswordRequest {
     pub new_password: String,
 }
 
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AvatarUploadResponse {
+    pub avatar_url: String,
+}
+
 impl From<UserRow> for UserResponse {
     fn from(user: UserRow) -> Self {
         Self {

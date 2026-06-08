@@ -47,18 +47,18 @@
 - [x] 认证中间件（代码已实现 `Authorization: Bearer <token>` 校验；DB 用户查询 happy path 待联调）
 - [x] 获取 / 更新个人资料 API（代码已实现 `GET/PATCH /api/users/me`，资料更新仅允许 `username`；DB happy path 待联调）
 - [x] 修改密码 API（代码已实现 `PATCH /api/users/me/password`；DB happy path 待联调）
-- [ ] 头像上传 API（缺：存储策略、上传目录/对象存储、URL 形式、大小限制、文件类型白名单）
+- [x] 头像上传 API（代码已实现 `POST /api/users/me/avatar`，本地存储到 `server/uploads/avatars/`，静态 URL 为 `/uploads/avatars/...`；DB happy path 待联调）
 
 **Phase 2 后端待补 / 待联调：**
 - [ ] 在可用 PostgreSQL 环境中执行 `server/migrations/20260605000000_create_users.sql`。
 - [ ] 跑通注册 → 登录 → `GET /api/users/me` → 更新用户名 → 修改密码的数据库 happy path。
-- [ ] 确认头像上传策略后实现头像上传 API，并决定是否复用 Phase 5 文件上传接口。
+- [ ] 在可用 PostgreSQL 环境中跑通头像上传 DB happy path，并确认本地头像策略是否在 Phase 5 文件上传接口中复用或升级。
 
 **前端：**
-- [ ] 注册 / 登录页面
-- [ ] 退出登录
-- [ ] 个人中心页面（资料展示 + 编辑 + 修改密码 + 头像上传）
-- [ ] 个人中心 — 收藏列表选项卡（Phase 2 先做 UI 占位，Phase 4 接入数据）
+- [x] 注册 / 登录页面
+- [x] 退出登录
+- [x] 个人中心页面（资料展示 + 编辑 + 修改密码 + 头像上传 — 头像上传区域暂为"待接入"占位，等待存储策略确认）
+- [x] 个人中心 — 收藏列表选项卡（Phase 2 先做 UI 占位，Phase 4 接入数据）
 
 ### Phase 3 — 游戏浏览（前后端可并行）
 
@@ -160,6 +160,8 @@ NoneWhite_Site/
 ├── startBackend.bat            # Windows 后端启动脚本
 ├── startFrontend.sh            # Linux/macOS 前端启动脚本
 ├── startFrontend.bat           # Windows 前端启动脚本
+├── setupDatabase.sh            # Linux/macOS PostgreSQL 启动与 migration 脚本
+├── setupDatabase.bat           # Windows PostgreSQL 启动与 migration 脚本
 ├── package.json                # 根目录脚本与 Husky 配置
 └── .env.example
 ```
@@ -202,9 +204,15 @@ startBackend.bat        # → localhost:3000
 cp .env.example .env
 docker compose up -d    # 启动本地 PostgreSQL，数据保存在 Docker volume: postgres_data
 
-# 应用 SQL migration（当前项目使用 SQL 文件，尚未引入 migration 工具）
-set -a && . ./.env && set +a
-psql "$DATABASE_URL" -f server/migrations/20260605000000_create_users.sql
+# 启动 PostgreSQL 并应用 SQL migration（推荐）
+# Linux/macOS
+./setupDatabase.sh
+
+# Windows
+setupDatabase.bat
+
+# 如需手动应用 migration，可在 docker compose 启动后执行：
+docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/migrations/20260605000000_create_users.sql
 
 # 前端（脚本会先确保依赖已安装；Vite proxy 已将 /api 请求转发到后端，无需处理 CORS）
 # Linux/macOS
@@ -226,6 +234,18 @@ npm run dev             # → 127.0.0.1:5173
 当前后端在启动阶段集中加载环境变量。入口会先加载 `server/.env`，再加载根目录 `.env` 作为项目级 fallback；`dotenvy` 默认不覆盖已存在变量，因此同名变量当前实际优先级为：shell 环境变量 > `server/.env` > 根目录 `.env` > 代码默认值。
 
 后端启动代码通过 `CARGO_MANIFEST_DIR` 定位 `server/.env` 与根目录 `.env`，因此通过 `./startBackend.sh`、`startBackend.bat` 或 `cargo run --manifest-path server/Cargo.toml` 启动时使用相同优先级。不要提交真实 `.env`、JWT secret、数据库密码或 token。
+
+### Phase 2 上传配置
+
+当前头像上传采用本地开发存储策略：
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `UPLOAD_DIR` | `uploads` | 相对 `server/` 的上传目录，实际头像目录为 `server/uploads/avatars/` |
+| `UPLOAD_PUBLIC_BASE_URL` | `/uploads` | API 返回给前端的公开 URL 前缀 |
+| `MAX_AVATAR_SIZE_BYTES` | `2097152` | 头像最大 2 MiB |
+
+`POST /api/users/me/avatar` 使用 `multipart/form-data`，字段名为 `avatar`，当前允许 `image/png`、`image/jpeg`、`image/webp`。上传成功后返回 `{ "avatarUrl": "/uploads/avatars/..." }`，并通过后端 `/uploads/avatars/{file}` 静态读取。本地上传文件已通过 `.gitignore` 排除，不要提交真实用户上传内容。
 
 ### Phase 2 后端 API 示例
 
@@ -258,10 +278,14 @@ curl -i -X POST http://127.0.0.1:3000/api/auth/login \
 
 # 当前用户缺少 token：预期 HTTP 401，body.code=40102，message="Authentication is required"
 curl -i http://127.0.0.1:3000/api/users/me
+
+# 头像上传：需替换真实 token 和本地图片路径；预期 HTTP 200，body.code=0，data.avatarUrl 为 /uploads/avatars/...
+curl -i -X POST http://127.0.0.1:3000/api/users/me/avatar \
+  -H 'Authorization: Bearer <token>' \
+  -F 'avatar=@./avatar.png;type=image/png'
 ```
 
-> 头像上传 API 仍待确认存储策略（上传目录、URL 形式、大小限制、文件类型）后实现。
-> 当前环境可以解析 `docker compose config`，但没有可用 Docker daemon / `psql`，因此 Phase 2 auth/user API 已完成代码、编译、单元测试和非 DB curl 回归；注册/登录/资料/改密的数据库 happy path 仍需在具备 PostgreSQL 的环境中补充联调记录。
+> 当前环境缺少可用 Docker / `psql` 命令，因此 Phase 2 auth/user/avatar API 已完成代码、编译和单元测试；注册/登录/资料/改密/头像上传的数据库 happy path 仍需在具备 PostgreSQL 的环境中补充联调记录。
 
 ### 开发检查
 

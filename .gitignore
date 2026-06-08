@@ -12,5 +12,6 @@ pnpm-debug.log*
 dist/
 coverage/
 target/
+server/uploads/
 
 .DS_Store

@@ -43,6 +43,22 @@ impl AppError {
         )
     }
 
+    pub const fn avatar_file_required() -> Self {
+        Self::new(StatusCode::BAD_REQUEST, 40006, "Avatar file is required")
+    }
+
+    pub const fn avatar_file_type_not_allowed() -> Self {
+        Self::new(
+            StatusCode::BAD_REQUEST,
+            40007,
+            "Avatar file type is not allowed",
+        )
+    }
+
+    pub const fn avatar_file_too_large() -> Self {
+        Self::new(StatusCode::BAD_REQUEST, 40008, "Avatar file is too large")
+    }
+
     pub const fn invalid_credentials() -> Self {
         Self::new(StatusCode::UNAUTHORIZED, 40101, "Invalid email or password")
     }
@@ -73,6 +89,10 @@ impl AppError {
 
     pub const fn user_not_found() -> Self {
         Self::new(StatusCode::NOT_FOUND, 40401, "User not found")
+    }
+
+    pub const fn uploaded_file_not_found() -> Self {
+        Self::new(StatusCode::NOT_FOUND, 40402, "Uploaded file not found")
     }
 
     pub const fn username_taken() -> Self {

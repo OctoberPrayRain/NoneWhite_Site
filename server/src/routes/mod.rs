@@ -1,5 +1,6 @@
 mod auth;
 mod test;
+mod uploads;
 mod users;
 
 use axum::{http::StatusCode, response::Json, routing::get, Router};
@@ -13,6 +14,7 @@ pub fn api_routes() -> Router<AppState> {
         .route("/api/test", get(test::get_test_status))
         .merge(auth::routes())
         .merge(users::routes())
+        .merge(uploads::routes())
 }
 
 pub async fn not_found() -> (StatusCode, Json<ApiResponse<Value>>) {

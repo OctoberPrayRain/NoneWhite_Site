@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, path::PathBuf};
 
 #[derive(Clone, Debug)]
 pub struct ServerConfig {
@@ -18,10 +18,18 @@ pub struct AuthConfig {
 }
 
 #[derive(Clone, Debug)]
+pub struct UploadConfig {
+    pub upload_dir: PathBuf,
+    pub public_base_url: String,
+    pub max_avatar_size_bytes: usize,
+}
+
+#[derive(Clone, Debug)]
 pub struct AppConfig {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub auth: AuthConfig,
+    pub upload: UploadConfig,
 }
 
 impl ServerConfig {
@@ -51,7 +59,41 @@ impl AppConfig {
                     .and_then(|value| value.parse::<u64>().ok())
                     .unwrap_or(604_800),
             },
+            upload: UploadConfig {
+                upload_dir: resolve_upload_dir(
+                    env::var("UPLOAD_DIR").unwrap_or_else(|_| "uploads".to_string()),
+                ),
+                public_base_url: normalize_public_base_url(
+                    env::var("UPLOAD_PUBLIC_BASE_URL").unwrap_or_else(|_| "/uploads".to_string()),
+                ),
+                max_avatar_size_bytes: env::var("MAX_AVATAR_SIZE_BYTES")
+                    .ok()
+                    .and_then(|value| value.parse::<usize>().ok())
+                    .unwrap_or(2 * 1024 * 1024),
+            },
         }
+    }
+}
+
+fn resolve_upload_dir(value: String) -> PathBuf {
+    let path = PathBuf::from(value);
+    if path.is_absolute() {
+        return path;
+    }
+
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(path)
+}
+
+fn normalize_public_base_url(value: String) -> String {
+    let trimmed = value.trim().trim_end_matches('/');
+    if trimmed.is_empty() {
+        return "/uploads".to_string();
+    }
+
+    if trimmed.starts_with('/') {
+        trimmed.to_string()
+    } else {
+        format!("/{trimmed}")
     }
 }
 
