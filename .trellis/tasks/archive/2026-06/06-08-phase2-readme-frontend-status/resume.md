@@ -27,3 +27,7 @@ Update `README.md` so the Phase 2 frontend checklist matches verified current Vu
 - Vite preview route checks for `/`, `/test-api`, `/login`, `/register`, `/profile`
 
 This marker is committed and pushed before editing `README.md` to satisfy the pre-implementation marker requirement.
+
+## Superseded Note
+
+Before this task's README edit could be pushed, remote `development` advanced with Phase 2 backend avatar/API/DB evidence and README contract cleanup. The remote README now already distinguishes completed frontend profile surfaces from the remaining unchecked frontend avatar upload interaction, so this README-status task is superseded and should be archived without additional README changes.
