@@ -123,3 +123,50 @@ Known Limits:
 - Avatar upload remains blocked by unresolved storage strategy, upload target, URL form, size limit, and file type whitelist.
 Result: Pass for C-03.2/C-04.1/C-04.2 documentation closeout and INT-03 available regression checks; DB-backed integration remains blocked by environment.
 Follow-up Needed: Backend owner should decide whether to change env loading so `server/.env` overrides root `.env`; Role C should append DB happy path evidence once PostgreSQL and `psql` are available.
+
+## Handoff - Role C - 2026-06-08 Phase 2 Closeout
+
+Sub-lane: C2 API Contract/Field Map, C3 Env/Docs/README, C4 Integration QA
+Task IDs: C-03, C-04, INT-01, INT-02, INT-03
+Scenario: Phase 2 contract and documentation closeout after Role A backend avatar upload and Role B frontend auth/profile implementation.
+Changed Files:
+- `README.md`: split the frontend profile checklist so completed profile display/edit/password work remains checked, while frontend avatar upload interaction stays unchecked until Role B wires `POST /api/users/me/avatar`.
+- `agent/COLLABORATION_PLAN.md`: updated current project baseline, avatar upload storage/API/error contract, upload env variables, and frontend acceptance wording to match the current implementation.
+- `agent/JOURNALIST/C_DATABASE_CONTRACTS_DOCS_QA/C_DATABASE_CONTRACTS_DOCS_QA_LOG.md`: appended this handoff/QA evidence block.
+Contracts Created: none.
+Contracts Changed:
+- Phase 2 avatar backend contract is now explicit: `POST /api/users/me/avatar`, multipart field `avatar`, local storage under `UPLOAD_DIR/avatars`, default public URL `/uploads/avatars/...`, 2 MiB max size, and allowed MIME/signatures `image/png`, `image/jpeg`, `image/webp`.
+- Static avatar access is now documented as `GET /uploads/avatars/{file_name}` returning image bytes rather than the API envelope.
+- Frontend contract now explicitly says avatar upload UI remains incomplete until it calls the real backend avatar API and refreshes `currentUser.avatarUrl`.
+Verification:
+- `npm run lint`: passed; Rust fmt/check and frontend Vite production build completed.
+- `cargo test --manifest-path server/Cargo.toml`: passed, 15 tests.
+- `git diff --check`: passed; only Windows LF-to-CRLF working-copy warnings were printed.
+- Markdown LSP diagnostics: not available in this environment because no `.md` LSP server is configured.
+Manual/API/UI QA:
+- Existing Role A evidence already recorded WSL PostgreSQL 16.14 DB happy path for register, login, current user, profile update, password change, avatar upload, and static avatar fetch.
+- This Role C pass performed contract/documentation QA only and did not rerun the live DB curl flow.
+Known Limits:
+- Docker Desktop remains unavailable in the current Windows shell; WSL PostgreSQL evidence is sufficient for Phase 2 DB happy path, but `setupDatabase.bat` still requires Docker Desktop in PATH.
+- Frontend avatar upload interaction is not complete; `client/src/views/ProfileView.vue` still shows a disabled “待接入上传接口” button and `client/src/api/users.js` has no `uploadAvatar` function.
+- Phase 5 may still decide whether to reuse or upgrade the local avatar storage strategy for broader file uploads.
+Conflict Notes:
+- Shared files modified: `README.md`, `agent/COLLABORATION_PLAN.md`, and this append-only Role C log.
+- No A/B source code was modified in this Role C pass.
+Next Role Needed: Role B can implement the frontend avatar upload interaction against the now-documented backend contract if Phase 2 wants that remaining unchecked README item closed.
+
+## QA Evidence - Role C - 2026-06-08 Phase 2 Closeout
+
+Task IDs: C-04, INT-03
+Scenario: Ensure Phase 2 README status and collaboration contract do not overclaim completed frontend avatar upload work.
+Surface: README, collaboration contract, Role C log, Rust backend tests, frontend production build.
+Command Or Manual Steps:
+- Read `README.md`, `agent/COLLABORATION_PLAN.md`, Role C guide/log, backend avatar route/service/config, frontend `ProfileView.vue`, and `client/src/api/users.js`.
+- Run `npm run lint`.
+- Run `cargo test --manifest-path server/Cargo.toml`.
+- Run `git diff --check`.
+Expected: Docs distinguish backend avatar API completion from frontend avatar upload UI completion; project lint/build/tests pass; diff has no whitespace errors.
+Actual: README now keeps backend avatar API checked, keeps profile page checked for implemented profile/password surfaces, and leaves frontend avatar upload interaction unchecked; collaboration plan documents the backend upload contract and frontend pending state; lint/build/tests passed; diff check reported no whitespace errors beyond LF-to-CRLF warnings.
+Result: Pass.
+Artifacts: Command output captured in current development session; no JWT, secret, real password, database dump, or upload content recorded.
+Follow-up Needed: Implement and verify frontend avatar upload UI if the project wants the remaining Phase 2 frontend avatar item completed before Phase 3.
