@@ -6,46 +6,66 @@
 
 ## Overview
 
-<!--
-Document your project's state management conventions here.
+Phase 2 uses a lightweight auth store implemented with Vue `ref()` values in `client/src/stores/auth.js`. Pinia is not installed and is not registered in `client/src/main.js`.
 
-Questions to answer:
-- What state management solution do you use?
-- How is local vs global state decided?
-- How do you handle server state?
-- What are the patterns for derived state?
--->
-
-(To be filled by the team)
+The store is intentionally narrow: it owns auth token persistence, current user, auth status, and auth error message. Page-specific form fields, tabs, loading messages, and validation errors remain local to the route component.
 
 ---
 
 ## State Categories
 
-<!-- Local state, global state, server state, URL state -->
+Local component state:
 
-(To be filled by the team)
+- Login form fields and status in `LoginView.vue`.
+- Register form fields, `confirmPassword`, and status in `RegisterView.vue`.
+- Profile tab, username form, password form, and message refs in `ProfileView.vue`.
+
+Shared auth state:
+
+- `authToken`, `tokenType`, `expiresIn`, `currentUser`, `authStatus`, and `authErrorMessage` in `client/src/stores/auth.js`.
+- Token persistence uses `localStorage` key `nonewhite_auth_token`.
+
+Router state:
+
+- Route visibility is derived from `route.meta.guestOnly` and `route.meta.requiresAuth` in `AppHeader.vue`.
+- Current routes are centralized in `client/src/router/index.js`.
+
+Server state:
+
+- Current user data is loaded on demand with `loadCurrentUser()` and stored in `currentUser`.
+- There is no general server-state cache.
 
 ---
 
 ## When to Use Global State
 
-<!-- Criteria for promoting state to global -->
+Use the auth store only for state that must be shared across the header and multiple pages:
 
-(To be filled by the team)
+- The saved auth token.
+- The current user displayed in the header/profile.
+- Logout and auth clearing behavior.
+
+Keep state local when it is used by one route or one form. Examples: `activeTab`, `profileUsername`, `currentPassword`, `confirmNewPassword`, form status strings, and success/error messages.
 
 ---
 
 ## Server State
 
-<!-- How server data is cached and synchronized -->
+Server calls should flow through API modules and store/page actions:
 
-(To be filled by the team)
+```js
+currentUser.value = await fetchCurrentUser(authToken.value)
+```
+
+The current project does not cache lists, paginate data, or synchronize background server state. Favorites are a Phase 4 placeholder in `ProfileView.vue` and must not request a favorites API during Phase 2.
+
+When a 401 occurs while loading the current user, `loadCurrentUser()` clears auth state through `clearAuth()`. Preserve that behavior for token invalidation paths.
 
 ---
 
 ## Common Mistakes
 
-<!-- State management mistakes your team has made -->
-
-(To be filled by the team)
+- Do not add Pinia without adding the dependency, registering it in `main.js`, and updating project docs.
+- Do not store password fields, confirm-password fields, or transient form errors globally.
+- Do not create global state for avatar upload while the upload contract is blocked.
+- Do not keep stale `currentUser` after a 401; clear auth state.
