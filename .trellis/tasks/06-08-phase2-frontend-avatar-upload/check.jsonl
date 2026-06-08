@@ -1,0 +1,5 @@
+{"file":".trellis/spec/frontend/index.md","reason":"Check final README/status and frontend quality expectations."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Check Vue component/accessibility/style consistency."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Check currentUser/auth state is updated through existing store boundaries."}
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Check forbidden dependencies, favorites non-goal, and verification evidence."}
+{"file":".trellis/tasks/06-08-phase2-frontend-avatar-upload/research/avatar-upload-contract.md","reason":"Check upload request/response contract and no overclaims."}

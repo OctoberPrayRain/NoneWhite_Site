@@ -1,0 +1,6 @@
+{"file":".trellis/spec/frontend/index.md","reason":"Frontend implementation conventions, checklist, and quality gates."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Vue SFC, accessibility, and styling patterns for ProfileView changes."}
+{"file":".trellis/spec/frontend/hook-guidelines.md","reason":"Vue ref/computed/onMounted/watch and API module boundaries."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Auth/currentUser state ownership and local profile form state rules."}
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Forbidden patterns and required frontend verification."}
+{"file":".trellis/tasks/06-08-phase2-frontend-avatar-upload/research/avatar-upload-contract.md","reason":"Exact avatar upload endpoint, field name, size/type limits, response, and non-goals."}
