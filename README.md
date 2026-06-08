@@ -43,16 +43,17 @@
 
 **后端：**
 - [x] User Model + 建表（已添加 `users` SQL migration 与后端用户数据层基础）
-- [x] 注册 / 登录 API（代码已实现 `POST /api/auth/register` / `POST /api/auth/login`；DB happy path 待 PostgreSQL 环境联调）
-- [x] 认证中间件（代码已实现 `Authorization: Bearer <token>` 校验；DB 用户查询 happy path 待联调）
-- [x] 获取 / 更新个人资料 API（代码已实现 `GET/PATCH /api/users/me`，资料更新仅允许 `username`；DB happy path 待联调）
-- [x] 修改密码 API（代码已实现 `PATCH /api/users/me/password`；DB happy path 待联调）
-- [x] 头像上传 API（代码已实现 `POST /api/users/me/avatar`，本地存储到 `server/uploads/avatars/`，静态 URL 为 `/uploads/avatars/...`；DB happy path 待联调）
+- [x] 注册 / 登录 API（已通过 PostgreSQL happy path 验证 `POST /api/auth/register` / `POST /api/auth/login`）
+- [x] 认证中间件（已通过 `Authorization: Bearer <token>` 访问当前用户验证）
+- [x] 获取 / 更新个人资料 API（已通过 `GET/PATCH /api/users/me` 验证，资料更新仅允许 `username`）
+- [x] 修改密码 API（已通过 `PATCH /api/users/me/password` 验证）
+- [x] 头像上传 API（已通过 `POST /api/users/me/avatar` 验证，本地存储到 `server/uploads/avatars/`，静态 URL 为 `/uploads/avatars/...`）
 
 **Phase 2 后端待补 / 待联调：**
-- [ ] 在可用 PostgreSQL 环境中执行 `server/migrations/20260605000000_create_users.sql`。
-- [ ] 跑通注册 → 登录 → `GET /api/users/me` → 更新用户名 → 修改密码的数据库 happy path。
-- [ ] 在可用 PostgreSQL 环境中跑通头像上传 DB happy path，并确认本地头像策略是否在 Phase 5 文件上传接口中复用或升级。
+- [x] 在可用 PostgreSQL 环境中执行 `server/migrations/20260605000000_create_users.sql`。
+- [x] 跑通注册 → 登录 → `GET /api/users/me` → 更新用户名 → 修改密码的数据库 happy path。
+- [x] 跑通头像上传 DB happy path，并验证 `/uploads/avatars/...` 静态访问。
+- [ ] 确认本地头像策略是否在 Phase 5 文件上传接口中复用或升级。
 
 **前端：**
 - [x] 注册 / 登录页面
@@ -285,7 +286,7 @@ curl -i -X POST http://127.0.0.1:3000/api/users/me/avatar \
   -F 'avatar=@./avatar.png;type=image/png'
 ```
 
-> 当前环境缺少可用 Docker / `psql` 命令，因此 Phase 2 auth/user/avatar API 已完成代码、编译和单元测试；注册/登录/资料/改密/头像上传的数据库 happy path 仍需在具备 PostgreSQL 的环境中补充联调记录。
+> 本次已使用 WSL PostgreSQL 16.14 完成 Phase 2 auth/user/avatar 数据库 happy path。当前 Windows 环境仍缺少 Docker Desktop / Windows `psql` 命令；如需使用 `setupDatabase.bat`，请先安装 Docker Desktop 并确保 `docker` 在 PATH 中。
 
 ### 开发检查
 

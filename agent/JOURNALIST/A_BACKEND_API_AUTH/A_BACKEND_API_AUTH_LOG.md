@@ -116,3 +116,32 @@ Conflict Notes:
 
 Next Role Needed:
 - Role C should run the DB-backed happy path using `setupDatabase.sh` or `setupDatabase.bat`, append evidence, and decide whether README DB pending checkboxes can be marked complete.
+
+## Handoff - Role A - 2026-06-08 DB Integration Evidence
+
+Sub-lane: A4 Auth Flow, A5 Authenticated User Flow
+Task IDs: A-04, A-05, A-06, A-07 DB happy path
+Environment:
+- Docker Desktop installation could not be completed in this non-admin Windows shell because `winget` source access failed and Docker/WSL feature changes require elevation.
+- WSL distro `Ubuntu-Work` already had PostgreSQL 16.14 online on port 5432.
+- Created/updated role `nonewhite_user` with password `nonewhite_password` and database `nonewhite_site` owned by that role.
+- Applied `server/migrations/20260605000000_create_users.sql` through WSL `psql`.
+
+Verification:
+- Confirmed `users` table columns: `id`, `username`, `email`, `password_hash`, `avatar_url`, `role`, `created_at`, `updated_at`.
+- Started Windows backend with `DATABASE_URL=postgres://nonewhite_user:nonewhite_password@localhost:5432/nonewhite_site`, `JWT_SECRET=local-integration-secret`, and `PORT=3021`.
+- `GET /api/test`: HTTP 200.
+- Register happy path: `POST /api/auth/register` returned `code=0`.
+- Login happy path: `POST /api/auth/login` returned `code=0`, `tokenType=Bearer`.
+- Current user happy path: `GET /api/users/me` with Bearer token returned `code=0`.
+- Profile update happy path: `PATCH /api/users/me` returned `code=0` and updated username.
+- Password change happy path: `PATCH /api/users/me/password` returned `code=0`.
+- Avatar upload happy path: `curl.exe -F avatar=@...png;type=image/png POST /api/users/me/avatar` returned `code=0`, `data.avatarUrl=/uploads/avatars/user-7-1780887306586.png`.
+- Static avatar fetch: `GET /uploads/avatars/user-7-1780887306586.png` returned HTTP 200 and 67 bytes.
+
+Known Limits:
+- Docker Desktop remains unavailable in this shell; `setupDatabase.bat` correctly fails fast with an installation/PATH message until Docker is installed from an elevated/admin context.
+- WSL PostgreSQL was used as the local DB runtime for integration evidence.
+
+Next Role Needed:
+- Role C can now treat Phase 2 auth/user/avatar DB happy path as verified and continue with contract/docs/QA cleanup or Phase 3 planning.
