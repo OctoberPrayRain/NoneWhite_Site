@@ -27,3 +27,16 @@ export function changePassword({ currentPassword, newPassword }, authToken) {
     body: JSON.stringify({ currentPassword, newPassword }),
   })
 }
+
+export async function uploadAvatar(file, authToken) {
+  const formData = new FormData()
+  formData.append('avatar', file)
+
+  return requestJson('/api/users/me/avatar', {
+    method: 'POST',
+    headers: {
+      ...createAuthHeaders(authToken),
+    },
+    body: formData,
+  })
+}

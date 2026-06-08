@@ -62,3 +62,42 @@ Conflict Notes:
 Next Role Needed:
 - Role A/C should provide backend + PostgreSQL integration evidence for auth/user happy paths.
 - Role A/C must confirm avatar storage strategy before Role B can wire real avatar upload.
+
+## Handoff - Role B 2026-06-08 Phase 2 Avatar Upload
+
+Sub-lane: B5 Profile Views
+Task IDs: `phase2-frontend-avatar-upload`, B-07.5
+Changed Files:
+- `client/src/api/users.js`
+- `client/src/views/ProfileView.vue`
+- `client/src/style.css`
+- `README.md`
+- `agent/JOURNALIST/B_FRONTEND_PAGE_INTERACTION/B_FRONTEND_PAGE_INTERACTION_LOG.md`
+
+Contracts Consumed:
+- `POST /api/users/me/avatar`
+- `multipart/form-data` with field name `avatar`
+- `Authorization: Bearer <token>` from the existing auth store token
+- API response `data.avatarUrl`
+- File limits: max 2 MiB; `image/png`, `image/jpeg`, `image/webp`
+
+Contracts Changed: None.
+
+Verification:
+- `npm --prefix client run build`: passed.
+- LSP diagnostics: not available in this environment because configured `typescript-language-server`, `vue-language-server`, and `biome` commands are not installed.
+- Live backend probe `GET http://127.0.0.1:3000/api/test`: returned HTTP `000`; no backend was listening.
+- Docker daemon probe: failed because `/var/run/docker.sock` is unavailable.
+- `psql --version`: failed because `psql` is not installed.
+
+Manual/UI QA:
+- Profile page now exposes a real avatar upload form instead of the disabled placeholder.
+- Live browser upload against a PostgreSQL-backed backend was not run in this Linux environment because the backend was not running and Docker/`psql` are unavailable.
+
+Known Limits:
+- Treat this as frontend wiring/build verification, not a fresh live DB upload happy path.
+- Phase 5 still owns the decision to reuse or upgrade the local avatar storage strategy.
+- Favorites tab remains Phase 4 placeholder-only and does not request favorites APIs.
+
+Next Role Needed:
+- When a PostgreSQL-backed backend is available, run a browser upload from `/profile` with a PNG/JPEG/WebP file under 2 MiB and append live UI evidence if needed.

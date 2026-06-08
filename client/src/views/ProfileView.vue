@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { changePassword, updateCurrentUser } from '../api/users'
+import { changePassword, updateCurrentUser, uploadAvatar } from '../api/users'
 import { useAuthStore } from '../stores/auth'
 
 const {
@@ -26,6 +26,12 @@ const passwordStatus = ref('idle')
 const passwordMessage = ref('')
 const passwordErrorMessage = ref('')
 
+const avatarFileInput = ref(null)
+const avatarFile = ref(null)
+const avatarStatus = ref('idle')
+const avatarMessage = ref('')
+const avatarErrorMessage = ref('')
+
 const isAuthenticated = computed(() => Boolean(authToken.value))
 const displayInitial = computed(() => currentUser.value?.username?.slice(0, 1).toUpperCase() || 'N')
 
@@ -39,6 +45,71 @@ function formatDate(value) {
   }
 
   return new Date(value).toLocaleString('zh-CN')
+}
+
+function handleAvatarChange(event) {
+  const file = event.target.files?.[0]
+
+  avatarMessage.value = ''
+
+  if (!file) {
+    avatarFile.value = null
+    avatarErrorMessage.value = ''
+    avatarStatus.value = 'idle'
+    return
+  }
+
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    avatarFile.value = null
+    avatarErrorMessage.value = '仅支持 PNG、JPEG 或 WebP 头像文件'
+    avatarStatus.value = 'error'
+    event.target.value = ''
+    return
+  }
+
+  if (file.size > 2097152) {
+    avatarFile.value = null
+    avatarErrorMessage.value = '头像文件不能超过 2 MiB'
+    avatarStatus.value = 'error'
+    event.target.value = ''
+    return
+  }
+
+  avatarFile.value = file
+  avatarErrorMessage.value = ''
+  avatarStatus.value = 'idle'
+}
+
+async function handleAvatarUpload() {
+  if (!avatarFile.value) {
+    avatarErrorMessage.value = '请先选择头像文件'
+    avatarStatus.value = 'error'
+    return
+  }
+
+  avatarStatus.value = 'loading'
+  avatarMessage.value = ''
+  avatarErrorMessage.value = ''
+
+  try {
+    const result = await uploadAvatar(avatarFile.value, authToken.value)
+
+    currentUser.value = {
+      ...(currentUser.value || {}),
+      avatarUrl: result.avatarUrl,
+    }
+    avatarMessage.value = '头像已上传，预览已更新'
+    avatarStatus.value = 'success'
+    avatarFile.value = null
+
+    if (avatarFileInput.value) {
+      avatarFileInput.value.value = ''
+    }
+  } catch (error) {
+    avatarErrorMessage.value = error instanceof Error ? error.message : '头像上传失败'
+    avatarStatus.value = 'error'
+  }
 }
 
 async function refreshProfile() {
@@ -139,7 +210,7 @@ onMounted(refreshProfile)
   <section class="page-heading profile-heading">
     <div class="eyebrow">User Center</div>
     <h1>个人中心</h1>
-    <p>这里接入 Phase 2 用户系统契约，头像上传和收藏数据保持占位，等待后续存储与收藏接口确认。</p>
+    <p>这里接入 Phase 2 用户系统契约，收藏数据保持占位，等待后续收藏接口确认。</p>
   </section>
 
   <section v-if="!isAuthenticated" class="status-panel auth-empty-panel">
@@ -241,14 +312,29 @@ onMounted(refreshProfile)
           </button>
         </form>
 
-        <article class="profile-card placeholder-card">
+        <form class="profile-card" @submit.prevent="handleAvatarUpload">
           <div class="form-heading">
             <span class="pill">Avatar</span>
             <h2>头像上传</h2>
           </div>
-          <p>头像上传接口依赖存储策略、文件大小和类型白名单，目前仅展示占位，不发起上传请求。</p>
-          <button class="secondary-button" type="button" disabled>待接入上传接口</button>
-        </article>
+          <label class="form-field">
+            <span>选择头像文件（PNG / JPEG / WebP，最大 2 MiB）</span>
+            <input
+              ref="avatarFileInput"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              @change="handleAvatarChange"
+            />
+          </label>
+          <p class="form-help">上传会使用 <code>avatar</code> 字段提交到后端，并用返回的 avatarUrl 更新上方头像预览。</p>
+          <p v-if="avatarStatus === 'error'" class="notice-box is-error">{{ avatarErrorMessage }}</p>
+          <p v-if="avatarStatus === 'success' && avatarMessage" class="notice-box is-success">
+            {{ avatarMessage }}
+          </p>
+          <button class="primary-button form-button" type="submit" :disabled="avatarStatus === 'loading' || !avatarFile">
+            {{ avatarStatus === 'loading' ? '上传中...' : '上传头像' }}
+          </button>
+        </form>
       </div>
 
       <article v-else class="profile-card placeholder-card">

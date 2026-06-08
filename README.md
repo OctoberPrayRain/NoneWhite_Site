@@ -58,8 +58,8 @@
 **前端：**
 - [x] 注册 / 登录页面
 - [x] 退出登录
-- [x] 个人中心页面（资料展示 + 编辑 + 修改密码；头像区域展示 `avatarUrl` 或首字母占位，不发起上传请求）
-- [ ] 前端头像上传交互（调用 `POST /api/users/me/avatar`；当前 Profile 页仍为“待接入上传接口”占位）
+- [x] 个人中心页面（资料展示 + 编辑 + 修改密码；头像区域展示 `avatarUrl` 或首字母占位）
+- [x] 前端头像上传交互（Profile 页已接入文件选择、2 MiB / PNG / JPEG / WebP 前端校验，并使用 `FormData` 字段 `avatar` 调用 `POST /api/users/me/avatar`；当前 Linux 会话未运行 live backend/PostgreSQL 上传联调）
 - [x] 个人中心 — 收藏列表选项卡（Phase 2 先做 UI 占位，Phase 4 接入数据）
 
 ### Phase 3 — 游戏浏览（前后端可并行）
