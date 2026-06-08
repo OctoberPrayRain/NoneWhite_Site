@@ -1,0 +1,3 @@
+{"file":".trellis/spec/frontend/index.md","reason":"Check README status against frontend conventions and known placeholders."}
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Check required verification and blocked avatar/favorites/DB language."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Check status wording for cross-layer claims that are not verified."}
