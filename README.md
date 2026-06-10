@@ -73,11 +73,31 @@
 - [ ] 分类 / 标签 API
 
 **前端：**
-- [ ] 游戏列表页（卡片展示 + 分页 + 侧栏筛选）
-- [ ] 游戏详情页（信息展示 + 封面 + 截图轮播）
+- [x] 游戏列表页（卡片展示 + 分页 + 分类筛选 + 标签筛选 + URL query 状态同步）
+- [x] 游戏详情页（信息展示 + 封面 + 分类/标签 + 截图轮播 + 下载/评论占位）
+- [x] 游戏 API client：`client/src/api/games.js`，基于 `client/src/api/http.js`，提供 `getGames`、`getGameDetail`、`getCategories`、`getTags`
+- [x] 游戏组件：`GameCard.vue`、`GameFilter.vue`、`ScreenshotCarousel.vue`
+- [x] 公共状态组件：`Pagination.vue`、`BaseLoading.vue`、`EmptyState.vue`
+- [x] 路由接入：`/games`、`/games/:id`；`/games` 已通过 `meta.label` 显示在 Header 导航中
 
 **数据：**
 - [ ] 准备一批 seed 假数据（方便联调）
+
+**Phase 3 前端状态说明：**
+- [x] `npm --prefix client run build` 已通过。
+- [x] `npm run lint` 已通过。
+- [x] 浏览器验证 `/games`、`/games?page=1&categoryId=1&tagId=1`、`/games/1?page=1&categoryId=1&tagId=1` 可正常渲染。
+- [x] 当前前端支持 mock fallback，仅用于后端接口未完成时预览 UI。
+- [ ] 真实后端联调尚未完成，不能将 mock fallback 标记为接口完成。
+
+**Phase 3 后端待确认：**
+- [ ] `games` / `categories` / `tags` / `game_tags` / `screenshots` 表是否完成。
+- [ ] `GET /api/games`、`GET /api/games/:id`、`GET /api/categories`、`GET /api/tags` 是否完成。
+- [ ] 分页参数是否为 `page` / `pageSize`。
+- [ ] 筛选参数是否为 `categoryId` / `tagId`。
+- [ ] 图片 URL 是完整 URL 还是相对路径。
+- [ ] `screenshots` 是包含在详情接口中，还是提供独立接口。
+- [ ] `category` / `tags` 字段格式是否和前端契约一致。
 
 ### Phase 4 — 互动功能（前后端可并行）
 

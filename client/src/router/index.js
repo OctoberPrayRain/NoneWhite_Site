@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import HomeView from '../views/HomeView.vue'
+import GameDetailView from '../views/game/GameDetailView.vue'
+import GameListView from '../views/game/GameListView.vue'
 import LoginView from '../views/LoginView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import RegisterView from '../views/RegisterView.vue'
@@ -23,6 +25,19 @@ const routes = [
     meta: {
       label: '联调验证',
     },
+  },
+  {
+    path: '/games',
+    name: 'games',
+    component: GameListView,
+    meta: {
+      label: '游戏列表',
+    },
+  },
+  {
+    path: '/games/:id',
+    name: 'game-detail',
+    component: GameDetailView,
   },
   {
     path: '/login',

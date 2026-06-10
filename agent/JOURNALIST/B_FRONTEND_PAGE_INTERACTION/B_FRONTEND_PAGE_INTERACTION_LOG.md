@@ -153,3 +153,68 @@ Conflict Notes:
 
 Next Role Needed:
 - Role C can record Windows + Docker PostgreSQL closeout evidence and mark Phase 2 ready for Phase 3 planning.
+
+## Handoff - Role B 2026-06-10 Phase 3 Game Browsing Frontend
+
+Sub-lane: B8 Game Browsing Views, B9 Game API Client, B10 Game Components
+Task IDs: Phase 3 frontend game browsing
+Changed Files:
+- `client/src/api/games.js`
+- `client/src/views/game/GameListView.vue`
+- `client/src/views/game/GameDetailView.vue`
+- `client/src/components/game/GameCard.vue`
+- `client/src/components/game/GameFilter.vue`
+- `client/src/components/game/ScreenshotCarousel.vue`
+- `client/src/components/common/Pagination.vue`
+- `client/src/components/common/BaseLoading.vue`
+- `client/src/components/common/EmptyState.vue`
+- `client/src/router/index.js`
+- `client/src/style.css`
+- `README.md`
+- `agent/COLLABORATION_PLAN.md`
+- `agent/JOURNALIST/B_FRONTEND_PAGE_INTERACTION/B_FRONTEND_PAGE_INTERACTION_LOG.md`
+
+Contracts Expected:
+- `GET /api/games?page=1&pageSize=12&categoryId=1&tagId=2`
+- `GET /api/games/:id`
+- `GET /api/categories`
+- `GET /api/tags`
+- API envelope `{ code, data, message }`
+- Game list data shape `{ list, total, page, pageSize }`
+- Game detail includes `category`, `tags`, and preferably `screenshots`
+
+Contracts Changed:
+- None. Frontend added expected Phase 3 contracts as comments and documentation only.
+
+Implementation Notes:
+- Added `client/src/api/games.js` based on the existing `client/src/api/http.js`; no `request.js` was created.
+- API layer normalizes backend snake_case fields to frontend camelCase fields.
+- Added mock fallback for games/categories/tags/detail only as UI fallback while backend Phase 3 endpoints are unavailable.
+- Added public routes `/games` and `/games/:id`.
+- Added `/games` `meta.label` so existing Header route filtering shows “游戏列表” for logged-out and logged-in users.
+- Detail route intentionally has no `meta.label` to avoid showing dynamic detail pages in Header navigation.
+
+Verification:
+- `npm --prefix client run build`: passed.
+- `npm run lint`: passed; Rust fmt/check and frontend build completed.
+- Browser verification passed for `/games`.
+- Browser verification passed for `/games?page=1&categoryId=1&tagId=1`.
+- Browser verification passed for `/games/1?page=1&categoryId=1&tagId=1`.
+- Detail page back link preserved original list query.
+
+Known Limits:
+- This is not real backend integration yet; the UI is currently using mock fallback when Phase 3 endpoints are missing.
+- Like/favorite interactions are static placeholders for Phase 4.
+- Comments are placeholder-only for Phase 4.
+- Download area is placeholder-only for Phase 5.
+- No admin game CRUD, search page, or download link display was implemented in this phase.
+
+Backend/C Role Needed:
+- Confirm and implement `games`, `categories`, `tags`, `game_tags`, and `screenshots` schema.
+- Provide seed data for local integration.
+- Confirm `GET /api/games`, `GET /api/games/:id`, `GET /api/categories`, and `GET /api/tags`.
+- Confirm pagination params `page` / `pageSize`.
+- Confirm filter params `categoryId` / `tagId`.
+- Confirm whether image URLs are absolute or relative.
+- Confirm whether screenshots live inside game detail response or use a separate screenshots endpoint.
+- Confirm `category` / `tags` nested field shape.
