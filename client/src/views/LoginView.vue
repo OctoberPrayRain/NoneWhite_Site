@@ -1,9 +1,10 @@
 <script setup>
 import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '../stores/auth'
 
+const route = useRoute()
 const router = useRouter()
 const { authToken, loginWithCredentials } = useAuthStore()
 
@@ -45,7 +46,7 @@ async function handleSubmit() {
     })
     successMessage.value = '登录成功，正在前往个人中心...'
     status.value = 'success'
-    await router.push('/profile')
+    await router.push(typeof route.query.redirect === 'string' ? route.query.redirect : '/profile')
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '登录失败，请稍后重试'
     status.value = 'error'

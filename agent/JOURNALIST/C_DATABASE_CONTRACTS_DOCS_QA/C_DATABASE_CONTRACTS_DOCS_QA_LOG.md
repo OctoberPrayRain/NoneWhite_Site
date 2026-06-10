@@ -170,3 +170,30 @@ Actual: README now keeps backend avatar API checked, keeps profile page checked 
 Result: Pass.
 Artifacts: Command output captured in current development session; no JWT, secret, real password, database dump, or upload content recorded.
 Follow-up Needed: Implement and verify frontend avatar upload UI if the project wants the remaining Phase 2 frontend avatar item completed before Phase 3.
+
+## QA Evidence - Role C - 2026-06-10 Phase 2 Windows Docker Closeout
+
+Task IDs: C-04, INT-01, INT-02, INT-03
+Scenario: Final Phase 2 auth/user/avatar integration regression on Windows with Docker PostgreSQL.
+Surface: Docker PostgreSQL, Rust API, Vue frontend routes, Vite proxy, README status.
+Command Or Manual Steps:
+- Fast-forward local `development` to remote commit `0ff1c61`.
+- Run `setupDatabase.bat`.
+- Start backend with `startBackend.bat` and frontend with `startFrontend.bat`.
+- Run `cargo check --manifest-path server/Cargo.toml`.
+- Run `npm install`, `npm --prefix client install`, and `npm run lint`.
+- Browser-check `/register`, `/login`, `/profile`, and `/test-api`.
+- API-check old-password rejection, new-password login, and `POST /api/users/me/avatar` multipart upload.
+Expected:
+- Docker PostgreSQL is healthy and users migration exists.
+- Auth/profile/password/avatar happy path succeeds.
+- `/test-api` still returns backend test data through the Vite proxy.
+- Frontend build and root lint pass.
+Actual:
+- Docker PostgreSQL 17 container `nonewhite_postgres` was healthy.
+- Users table existed and the regression user row had `has_avatar=true` after upload.
+- Registration, login, current profile load, username update, password change, old-password rejection, new-password login, avatar upload, Profile avatar rendering, and `/test-api` all passed.
+- `npm run lint` passed after root dependencies were installed; the earlier Husky command-not-found condition was resolved by running root `npm install`.
+Result: Pass.
+Artifacts: Command output captured in the current development session; no JWT, secret, real user password, database dump, or uploaded image content was recorded in this log.
+Follow-up Needed: Phase 2 can be treated as implementation and integration complete. Remaining open product decision is whether Phase 5 should reuse or upgrade the local avatar/file-upload strategy.

@@ -4,6 +4,7 @@ import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import RegisterView from '../views/RegisterView.vue'
+import { useAuthStore } from '../stores/auth'
 import TestApiView from '../views/TestApiView.vue'
 
 const routes = [
@@ -58,6 +59,26 @@ const router = createRouter({
   scrollBehavior() {
     return { top: 0 }
   },
+})
+
+router.beforeEach((to) => {
+  const { authToken } = useAuthStore()
+  const isAuthenticated = Boolean(authToken.value)
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    return {
+      path: '/login',
+      query: {
+        redirect: to.fullPath,
+      },
+    }
+  }
+
+  if (to.meta.guestOnly && isAuthenticated) {
+    return '/profile'
+  }
+
+  return true
 })
 
 export { routes }

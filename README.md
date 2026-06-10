@@ -59,7 +59,7 @@
 - [x] 注册 / 登录页面
 - [x] 退出登录
 - [x] 个人中心页面（资料展示 + 编辑 + 修改密码；头像区域展示 `avatarUrl` 或首字母占位）
-- [x] 前端头像上传交互（Profile 页已接入文件选择、2 MiB / PNG / JPEG / WebP 前端校验，并使用 `FormData` 字段 `avatar` 调用 `POST /api/users/me/avatar`；当前 Linux 会话未运行 live backend/PostgreSQL 上传联调）
+- [x] 前端头像上传交互（Profile 页已接入文件选择、2 MiB / PNG / JPEG / WebP 前端校验，并使用 `FormData` 字段 `avatar` 调用 `POST /api/users/me/avatar`；已在 Windows + Docker PostgreSQL 环境完成头像上传与个人中心头像回显验证）
 - [x] 个人中心 — 收藏列表选项卡（Phase 2 先做 UI 占位，Phase 4 接入数据）
 
 ### Phase 3 — 游戏浏览（前后端可并行）
@@ -287,7 +287,7 @@ curl -i -X POST http://127.0.0.1:3000/api/users/me/avatar \
   -F 'avatar=@./avatar.png;type=image/png'
 ```
 
-> 本次已使用 WSL PostgreSQL 16.14 完成 Phase 2 auth/user/avatar 数据库 happy path。当前 Windows 环境仍缺少 Docker Desktop / Windows `psql` 命令；如需使用 `setupDatabase.bat`，请先安装 Docker Desktop 并确保 `docker` 在 PATH 中。
+> Phase 2 auth/user/avatar 数据库 happy path 已在 PostgreSQL 环境中完成验证；2026-06-10 又在 Windows + Docker Desktop + PostgreSQL 17 环境中完成注册、登录、当前用户、更新用户名、修改密码、头像上传、静态头像访问和前端个人中心头像回显回归。
 
 ### 开发检查
 

@@ -101,3 +101,55 @@ Known Limits:
 
 Next Role Needed:
 - When a PostgreSQL-backed backend is available, run a browser upload from `/profile` with a PNG/JPEG/WebP file under 2 MiB and append live UI evidence if needed.
+
+## Handoff - Role B 2026-06-10 Phase 2 Frontend Closeout Regression
+
+Sub-lane: B1 Baseline/HTTP, B3 Auth State, B4 Login/Register Views, B5 Profile Views
+Task IDs: B-02, B-05, B-06, B-07, INT-01, INT-02, INT-03
+Changed Files:
+- `client/src/api/http.js`
+- `client/src/api/test.js`
+- `client/src/router/index.js`
+- `client/src/views/LoginView.vue`
+
+Contracts Consumed:
+- API envelope `{ code, data, message }`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET/PATCH /api/users/me`
+- `PATCH /api/users/me/password`
+- `POST /api/users/me/avatar`
+- localStorage token key `nonewhite_auth_token`
+
+Contracts Changed: None.
+
+Verification:
+- Local repository was fast-forwarded to remote `development` commit `0ff1c61`.
+- `setupDatabase.bat`: passed; Docker PostgreSQL 17 container `nonewhite_postgres` was healthy and users migration was applied.
+- `cargo check --manifest-path server/Cargo.toml`: passed.
+- `npm install`: passed; root Husky dependency was installed and the previous `husky is not recognized` failure no longer reproduced.
+- `npm --prefix client install`: passed after root dependencies were present.
+- `npm run lint`: passed; Rust fmt/check and frontend Vite production build completed.
+- Vite proxy `GET http://127.0.0.1:5173/api/test`: HTTP 200 with `code=0`.
+
+Manual/UI QA:
+- Browser regression verified `/register` page load and successful registration.
+- Browser regression verified login and redirect into `/profile`.
+- Browser regression verified profile username update.
+- Browser regression verified password change; old password was rejected by API with HTTP 401 and new password login succeeded with HTTP 200.
+- Avatar upload was verified against the real backend with `multipart/form-data` field `avatar`; response returned `data.avatarUrl=/uploads/avatars/...`.
+- Browser regression verified Profile page renders the uploaded avatar from `/uploads/avatars/...`.
+- Browser regression verified `/test-api` still displays “Backend test API is running”.
+- Browser console check returned no error/warning entries during the completed regression checks.
+
+Known Limits:
+- The in-app browser automation environment could not operate the native file chooser directly, so the avatar file was uploaded with a real multipart backend request and then confirmed through Profile page avatar rendering.
+- Browser automation also blocked direct localStorage script manipulation; unauthenticated `/profile` redirect was verified through normal navigation.
+- Favorites tab remains Phase 4 placeholder-only and does not request favorites APIs.
+
+Conflict Notes:
+- Touched high-conflict `client/src/router/index.js` and `client/src/api/http.js` in a small sequenced stabilization pass.
+- Preserved all Phase 2 route paths and existing API field names.
+
+Next Role Needed:
+- Role C can record Windows + Docker PostgreSQL closeout evidence and mark Phase 2 ready for Phase 3 planning.
