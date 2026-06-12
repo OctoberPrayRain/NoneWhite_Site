@@ -139,7 +139,7 @@ function normalizeScreenshot(screenshot) {
   }
 }
 
-function normalizeGame(game) {
+export function normalizeGame(game) {
   return {
     id: game.id,
     title: game.title ?? '未命名游戏',

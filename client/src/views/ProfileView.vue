@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { changePassword, updateCurrentUser, uploadAvatar } from '../api/users'
+import ProfileFavoritesPanel from '../components/profile/ProfileFavoritesPanel.vue'
 import { useAuthStore } from '../stores/auth'
 
 const {
@@ -210,7 +211,7 @@ onMounted(refreshProfile)
   <section class="page-heading profile-heading">
     <div class="eyebrow">User Center</div>
     <h1>个人中心</h1>
-    <p>这里接入 Phase 2 用户系统契约，收藏数据保持占位，等待后续收藏接口确认。</p>
+    <p>这里接入用户系统与 Phase 4 收藏列表能力，可继续维护资料、密码与头像，并查看已收藏的游戏。</p>
   </section>
 
   <section v-if="!isAuthenticated" class="status-panel auth-empty-panel">
@@ -264,7 +265,7 @@ onMounted(refreshProfile)
           资料设置
         </button>
         <button :class="{ active: activeTab === 'favorites' }" type="button" @click="activeTab = 'favorites'">
-          收藏占位
+          收藏列表
         </button>
       </div>
 
@@ -337,13 +338,7 @@ onMounted(refreshProfile)
         </form>
       </div>
 
-      <article v-else class="profile-card placeholder-card">
-        <div class="form-heading">
-          <span class="pill">Favorites</span>
-          <h2>收藏列表</h2>
-        </div>
-        <p>收藏数据属于 Phase 4 互动功能，本页仅保留个人中心选项卡占位，不请求收藏 API。</p>
-      </article>
+      <ProfileFavoritesPanel v-else :active="activeTab === 'favorites'" />
     </div>
   </section>
 </template>

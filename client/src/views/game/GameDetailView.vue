@@ -5,9 +5,15 @@ import { useRoute } from 'vue-router'
 import { getGameDetail } from '../../api/games'
 import BaseLoading from '../../components/common/BaseLoading.vue'
 import EmptyState from '../../components/common/EmptyState.vue'
+import CommentSection from '../../components/game/CommentSection.vue'
+import FavoriteButton from '../../components/game/FavoriteButton.vue'
+import LikeButton from '../../components/game/LikeButton.vue'
 import ScreenshotCarousel from '../../components/game/ScreenshotCarousel.vue'
+import { useAuthStore } from '../../stores/auth'
 
 const route = useRoute()
+
+const { authToken } = useAuthStore()
 
 const game = ref(null)
 const loading = ref(false)
@@ -21,6 +27,29 @@ const backTarget = computed(() => ({
 }))
 
 const hasCover = computed(() => game.value?.coverUrl && !coverFailed.value)
+const isAuthenticated = computed(() => Boolean(authToken.value))
+
+function handleLikeUpdated(result) {
+  if (!game.value) {
+    return
+  }
+
+  game.value = {
+    ...game.value,
+    likesCount: result.likesCount,
+  }
+}
+
+function handleFavoriteUpdated(result) {
+  if (!game.value) {
+    return
+  }
+
+  game.value = {
+    ...game.value,
+    favoritesCount: result.favoritesCount,
+  }
+}
 
 async function loadGameDetail() {
   loading.value = true
@@ -109,14 +138,28 @@ watch(
           <span v-for="tag in game.tags" :key="tag.id">{{ tag.name }}</span>
         </div>
 
-        <div class="detail-stats" aria-label="互动数据占位">
-          <span>点赞 {{ game.likesCount }}</span>
-          <span>收藏 {{ game.favoritesCount }}</span>
+        <div class="detail-actions" aria-label="互动操作">
+          <LikeButton :game-id="game.id" :initial-count="game.likesCount" @updated="handleLikeUpdated" />
+          <FavoriteButton
+            :game-id="game.id"
+            :initial-count="game.favoritesCount"
+            @updated="handleFavoriteUpdated"
+          />
         </div>
+
+        <p class="detail-action-tip">
+          {{
+            isAuthenticated
+              ? '当前后端暂未返回“我是否已点赞/已收藏”的读取状态，按钮会在首次操作后同步当前状态。'
+              : '登录后可点赞、收藏并参与评论互动。'
+          }}
+        </p>
       </div>
     </section>
 
     <ScreenshotCarousel :screenshots="game.screenshots" :title="game.title" />
+
+    <CommentSection :game-id="game.id" />
 
     <section class="detail-section">
       <div class="section-heading">
@@ -124,14 +167,6 @@ watch(
         <span>Phase 5</span>
       </div>
       <p>下载链接与版本信息将在后续阶段接入真实后端数据。</p>
-    </section>
-
-    <section class="detail-section">
-      <div class="section-heading">
-        <h2>评论区</h2>
-        <span>Phase 4</span>
-      </div>
-      <p>评论列表、发布表单与互动能力将在 Phase 4 实现。</p>
     </section>
   </article>
 </template>

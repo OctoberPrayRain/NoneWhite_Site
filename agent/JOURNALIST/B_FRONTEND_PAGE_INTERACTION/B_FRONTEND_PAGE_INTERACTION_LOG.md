@@ -218,3 +218,73 @@ Backend/C Role Needed:
 - Confirm whether image URLs are absolute or relative.
 - Confirm whether screenshots live inside game detail response or use a separate screenshots endpoint.
 - Confirm `category` / `tags` nested field shape.
+
+## Handoff - Role B 2026-06-12 Phase 4 Frontend Interactions
+
+Sub-lane: B9 Game API Client, B10 Game Components, B11 Profile Favorites Integration
+Task IDs: Phase 4 frontend interactions
+Changed Files:
+- `client/src/api/games.js`
+- `client/src/api/interactions.js`
+- `client/src/components/game/LikeButton.vue`
+- `client/src/components/game/FavoriteButton.vue`
+- `client/src/components/game/CommentThreadItem.vue`
+- `client/src/components/game/CommentSection.vue`
+- `client/src/components/profile/ProfileFavoritesPanel.vue`
+- `client/src/views/game/GameDetailView.vue`
+- `client/src/views/ProfileView.vue`
+- `client/src/style.css`
+- `README.md`
+- `agent/JOURNALIST/B_FRONTEND_PAGE_INTERACTION/B_FRONTEND_PAGE_INTERACTION_LOG.md`
+
+Contracts Consumed:
+- `GET /api/games/:game_id/comments?page=1&pageSize=12`
+- `POST /api/games/:game_id/comments` with `{ content, parentId }`
+- `DELETE /api/comments/:id`
+- `POST /api/games/:game_id/like`
+- `DELETE /api/games/:game_id/like`
+- `POST /api/games/:game_id/favorite`
+- `DELETE /api/games/:game_id/favorite`
+- `GET /api/users/me/favorites?page=1&pageSize=12`
+- API envelope `{ code, data, message }`
+- Comment ownership rule: ordinary users can delete only their own comments
+
+Contracts Changed: None.
+
+Implementation Notes:
+- Added a dedicated `client/src/api/interactions.js` to normalize comment, like, favorite, and favorites-list payloads.
+- Game detail now renders real Phase 4 interaction UI instead of placeholders: like button, favorite button, comment composer, nested replies, and delete-own-comment flow.
+- Profile favorites tab now consumes the real favorites API instead of the old placeholder copy.
+- Because the backend currently has no read endpoint for "have I already liked/favorited this game", the buttons initialize from count only and become authoritative after the first mutation in the current session.
+- Comment nesting is assembled on the frontend from the flat paginated list using `parentId`.
+
+Verification:
+- `npm install` from `client/`: passed.
+- `npm run build` from `client/`: passed with Vite production build.
+- LSP diagnostics returned no diagnostics for newly added `client/src/api/interactions.js`, `LikeButton.vue`, `FavoriteButton.vue`, and `CommentThreadItem.vue`.
+- Some follow-up LSP checks on larger Vue/CSS files timed out in this environment, but the final Vite build passed after those edits.
+- `git diff` review confirmed the change scope stayed within Phase 4 frontend surfaces.
+
+Manual/UI QA:
+- Browser automation could not be completed here because the Playwright MCP runtime requires a local Chrome binary that is not installed in this environment.
+- Detached Vite preview server responded with HTTP 200 at `http://127.0.0.1:4173`, confirming the built app can be served locally.
+- A live backend-backed browser flow for `/games/:id` comments/likes/favorites and `/profile` favorites still needs to be run when Chrome + backend are available together.
+
+Additional Integration Evidence:
+- On 2026-06-12, local integration was completed against the real Rust backend at `http://127.0.0.1:3000` and a WSL PostgreSQL 16 instance exposed on Windows `127.0.0.1:5432`.
+- Phase 3/4 schema state was repaired by applying `server/migrations/20260612000000_create_games.sql`, `server/migrations/20260613000000_create_interactions.sql`, and `server/seeds/dev_phase3_games.sql` into `nonewhite_site` because the database initially only contained the `users` table.
+- Verified happy path: `GET /api/games/1/comments?page=1&pageSize=12` returned `{ list: [], total: 0 }` before writes; authenticated top-level comment and reply both returned HTTP 201; repeated `POST /api/games/1/like` and `POST /api/games/1/favorite` stayed idempotent with count `1`; `GET /api/users/me/favorites` returned game `1`; `GET /api/games/1` reflected updated `likesCount` and `favoritesCount`.
+- Verified permission/cascade path: a second ordinary user received HTTP 403 when trying to delete another user's comment; after the owner deleted the parent comment, the reply disappeared as well, matching the `comments.parent_id ON DELETE CASCADE` contract.
+
+Known Limits:
+- No mock fallback was added for Phase 4 interaction APIs; if the backend is down, the detail page shows real request failures for comments/like/favorite actions.
+- Initial liked/favorited state cannot be inferred before the first click because the backend currently returns counts but not per-user interaction flags.
+- Comment replies rely on the current paginated comment slice; a reply whose parent is outside the loaded page will render as a top-level item until that parent comment is in the fetched page.
+
+Conflict Notes:
+- Avoided `client/src/router/index.js` and `client/src/components/AppHeader.vue` to reduce shared-file conflict.
+- Reused existing `GameCard.vue`, `Pagination.vue`, and auth-store patterns instead of introducing new global state.
+
+Next Role Needed:
+- Role A/C should provide a browser-verifiable backend environment for Phase 4 happy-path and permission-path UI regression.
+- If Role A adds read endpoints for current-user like/favorite state, Role B should wire those into the detail page to eliminate the current first-click state ambiguity.

@@ -114,12 +114,19 @@
 - [x] 已实现公开评论列表、认证评论发表/删除、认证点赞/取消、认证收藏/取消、认证个人收藏列表 API。
 - [x] 评论内容后端校验：trim 后非空，最多 1000 字符；回复父评论必须属于同一游戏。
 - [x] 点赞和收藏写入幂等，并刷新 `games.likes_count` / `games.favorites_count`。
-- [ ] 真实 PostgreSQL 环境中的 Phase 4 curl happy path / permission path 联调证据待追加；当前代码已通过 Rust 编译和纯逻辑测试。
+- [x] 已在本机 Windows + WSL PostgreSQL 16 环境补跑 Phase 3/4 migrations + seed，并完成 Phase 4 API happy path / permission path 验证：公开评论列表返回空列表；认证评论发表与回复返回 HTTP 201；普通用户删除他人评论返回 HTTP 403；点赞/收藏重复提交保持幂等计数；`GET /api/users/me/favorites` 可读到收藏列表；取消点赞/收藏后计数归零；删除父评论后回复因 `ON DELETE CASCADE` 一并移除。
 
 **前端：**
-- [ ] 评论区组件（支持回复 + 删除自己的评论）
-- [ ] 点赞按钮组件
-- [ ] 收藏按钮组件
+- [x] 评论区组件（支持回复 + 删除自己的评论）
+- [x] 点赞按钮组件
+- [x] 收藏按钮组件
+
+**Phase 4 前端状态说明：**
+- [x] 游戏详情页已接入点赞按钮、收藏按钮、评论列表、评论发表、回复和删除自己评论的前端交互。
+- [x] 个人中心已将 Phase 2 的收藏占位切换为真实收藏列表，并接入 `GET /api/users/me/favorites?page=1&pageSize=12`。
+- [x] 新增 `client/src/api/interactions.js`，统一封装评论 / 点赞 / 收藏 / 我的收藏列表接口，并复用现有 API envelope。
+- [x] `npm --prefix client run build` 已通过。
+- [ ] 真实后端运行中的浏览器联调证据待追加；当前已完成真实 API 联调，但本环境缺少 Playwright 所需 Chrome 二进制，尚未补到浏览器自动化证据。前端在后端不可用时仍会保留 Phase 3 详情 mock 数据，但 Phase 4 互动接口本身不提供 mock fallback。
 
 ### Phase 5 — 管理后台与资源
 
@@ -249,6 +256,12 @@ docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < serve
 docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/migrations/20260612000000_create_games.sql
 docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/migrations/20260613000000_create_interactions.sql
 docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/seeds/dev_phase3_games.sql
+
+> Windows `setupDatabase.bat` 支持三种驱动模式：
+> - `DB_SETUP_DRIVER=auto`（默认）：优先复用当前可连接的本地 PostgreSQL；若本地不可连且检测到 WSL + psql + pg_isready，则尝试在 WSL 中启动 PostgreSQL；最后才回退到 Docker
+> - `DB_SETUP_DRIVER=local`：只使用当前 Windows 可访问的 PostgreSQL 服务（需安装 psql/pg_isready）
+> - `DB_SETUP_DRIVER=docker`：只使用 Docker Compose（需安装 Docker Desktop）
+> - `WSL_DB_DISTRO=Ubuntu-Work`：可选。如果 PostgreSQL 在非默认 WSL 发行版中，显式指定 distro 名称
 
 # 前端（脚本会先确保依赖已安装；Vite proxy 已将 /api 和 /uploads 请求转发到后端，无需处理 CORS）
 # Linux/macOS
