@@ -34,7 +34,7 @@
 - [x] 配置 Husky pre-commit（提交前运行 Rust 检查与前端 build）
 - [x] 添加后端一键启动脚本（`startBackend.sh` / `startBackend.bat`）
 - [x] 添加前端一键启动脚本（`startFrontend.sh` / `startFrontend.bat`）
-- [x] 配置 Vite proxy（前端请求 `/api` 自动转发到后端）
+- [x] 配置 Vite proxy（前端请求 `/api` 和 `/uploads` 自动转发到后端）
 - [x] 搭建前端基础布局（Header / Footer / 路由框架）
 - [x] 约定 API 返回格式（统一 `{ code, data, message }`）
 - [x] ✅ 前后端联调验证（后端 `GET /api/test`，前端 `/test-api` 已接入验证）
@@ -53,7 +53,7 @@
 - [x] 在可用 PostgreSQL 环境中执行 `server/migrations/20260605000000_create_users.sql`。
 - [x] 跑通注册 → 登录 → `GET /api/users/me` → 更新用户名 → 修改密码的数据库 happy path。
 - [x] 跑通头像上传 DB happy path，并验证 `/uploads/avatars/...` 静态访问。
-- [ ] 确认本地头像策略是否在 Phase 5 文件上传接口中复用或升级。
+- [ ] Phase 5 决策：确认本地头像存储策略是否在通用文件上传接口中复用或升级（当前 Phase 2 只确认头像本地开发策略）。
 
 **前端：**
 - [x] 注册 / 登录页面
@@ -87,10 +87,11 @@
 - [x] `npm --prefix client run build` 已通过。
 - [x] `npm run lint` 已通过。
 - [x] 浏览器验证 `/games`、`/games?page=1&categoryId=1&tagId=1`、`/games/1?page=1&categoryId=1&tagId=1` 可正常渲染。
-- [x] 当前前端支持 mock fallback，仅用于后端接口未完成时预览 UI。
-- [ ] 真实后端联调尚未完成，不能将 mock fallback 标记为接口完成。
+- [x] 当前前端支持 mock fallback，仅作为开发兜底；真实后端接口已实现后，mock fallback 不再代表接口完成状态。
+- [x] 真实后端 API 已在本机 PostgreSQL 环境通过 curl 验证：`/api/games`、`/api/games/1`、`/api/categories`。
+- [ ] 浏览器 `/games` 页面读取真实后端数据的联调证据待追加记录；完成前保留 mock fallback 作为开发兜底。
 
-**Phase 3 后端待确认：**
+**Phase 3 后端 / 联调状态：**
 - [x] `games` / `categories` / `tags` / `game_tags` / `screenshots` 表已通过 SQL migration 定义。
 - [x] `GET /api/games`、`GET /api/games/:id`、`GET /api/categories`、`GET /api/tags` 已在 Rust 后端实现。
 - [x] 分页参数确认为 `page` / `pageSize`。
@@ -98,7 +99,8 @@
 - [x] 图片 URL 当前按数据库中存储的相对/原样字符串返回；开发 seed 暂用空字符串占位。
 - [x] `screenshots` 包含在详情接口中，不新增独立截图接口。
 - [x] `category` / `tags` 字段使用 `{ id, name, slug }`，与前端契约一致。
-- [ ] 在可用 PostgreSQL 环境中执行 Phase 3 migration + seed 后，跑通真实 `/games` 前后端联调并移除对 mock fallback 的依赖判断。
+- [x] 已在本机 PostgreSQL 环境执行 Phase 3 migration + seed，并跑通真实后端 API：`GET /api/games`、`GET /api/games/:id`、`GET /api/categories`。
+- [ ] 浏览器 `/games` 真实数据联调证据待追加；mock fallback 保留为接口异常时的开发兜底，不作为完成依据。
 
 ### Phase 4 — 互动功能（前后端可并行）
 
@@ -240,7 +242,7 @@ docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < serve
 docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/migrations/20260612000000_create_games.sql
 docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/seeds/dev_phase3_games.sql
 
-# 前端（脚本会先确保依赖已安装；Vite proxy 已将 /api 请求转发到后端，无需处理 CORS）
+# 前端（脚本会先确保依赖已安装；Vite proxy 已将 /api 和 /uploads 请求转发到后端，无需处理 CORS）
 # Linux/macOS
 ./startFrontend.sh      # → 127.0.0.1:5173
 
@@ -253,7 +255,7 @@ npm install
 npm run dev             # → 127.0.0.1:5173
 ```
 
-> 前端 Phase 1 已完成：`client/` 已初始化，开发环境会将 `/api` 请求代理到后端。
+> 前端 Phase 1 已完成：`client/` 已初始化，开发环境会将 `/api` 和 `/uploads` 请求代理到后端。
 
 ### 后端环境变量加载顺序
 
