@@ -3,7 +3,8 @@
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-MIGRATION_FILE="$SCRIPT_DIR/server/migrations/20260605000000_create_users.sql"
+MIGRATIONS_DIR="$SCRIPT_DIR/server/migrations"
+SEEDS_DIR="$SCRIPT_DIR/server/seeds"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "Error: docker is not installed or not available in PATH." >&2
@@ -44,5 +45,14 @@ until docker compose exec -T postgres pg_isready -U "$POSTGRES_USER" -d "$POSTGR
   sleep 2
 done
 
-docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" < "$MIGRATION_FILE"
-echo "Database migration applied: $MIGRATION_FILE"
+for migration_file in "$MIGRATIONS_DIR"/*.sql; do
+  [ -f "$migration_file" ] || continue
+  docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" < "$migration_file"
+  echo "Database migration applied: $migration_file"
+done
+
+for seed_file in "$SEEDS_DIR"/dev_*.sql; do
+  [ -f "$seed_file" ] || continue
+  docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" < "$seed_file"
+  echo "Development seed applied: $seed_file"
+done

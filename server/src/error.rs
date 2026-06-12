@@ -95,6 +95,10 @@ impl AppError {
         Self::new(StatusCode::NOT_FOUND, 40402, "Uploaded file not found")
     }
 
+    pub const fn game_not_found() -> Self {
+        Self::new(StatusCode::NOT_FOUND, 40403, "Game not found")
+    }
+
     pub const fn username_taken() -> Self {
         Self::new(StatusCode::CONFLICT, 40901, "Username is already taken")
     }

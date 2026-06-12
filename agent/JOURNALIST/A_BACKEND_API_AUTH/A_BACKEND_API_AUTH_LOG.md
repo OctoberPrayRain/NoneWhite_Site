@@ -145,3 +145,35 @@ Known Limits:
 
 Next Role Needed:
 - Role C can now treat Phase 2 auth/user/avatar DB happy path as verified and continue with contract/docs/QA cleanup or Phase 3 planning.
+
+## Handoff - Role A - 2026-06-12 Phase 3 Game Browsing Backend
+
+Sub-lane: Phase 3 public game browsing API
+Task IDs: Phase 3 backend game browsing
+Changed Files:
+- `server/src/models/game.rs`, `server/src/models/mod.rs`: added game/category/tag/screenshot database row models.
+- `server/src/dto/games.rs`, `server/src/dto/mod.rs`: added Phase 3 query and response DTOs with camelCase JSON output.
+- `server/src/repositories/game_repository.rs`, `server/src/repositories/mod.rs`: added SQL data access for categories, tags, filtered/paginated games, detail lookup, game tags, and screenshots.
+- `server/src/services/game_service.rs`, `server/src/services/mod.rs`: added pagination normalization, list/detail composition, and service-level DTO assembly.
+- `server/src/routes/games.rs`, `server/src/routes/mod.rs`: registered public `GET /api/games`, `GET /api/games/{id}`, `GET /api/categories`, and `GET /api/tags` routes.
+- `server/src/error.rs`: added `40403 Game not found` for game detail misses.
+Contracts Consumed:
+- README Phase 3 game browsing requirements.
+- `agent/COLLABORATION_PLAN.md` Phase 3 frontend handoff: list shape `{ list, total, page, pageSize }`, params `page` / `pageSize` / `categoryId` / `tagId`, and detail fields `category` / `tags` / `screenshots`.
+Contracts Changed:
+- Phase 3 backend now confirms screenshots are embedded in `GET /api/games/{id}` rather than exposed as a separate endpoint.
+- Image URLs are returned as stored strings; development seed uses empty string placeholders.
+Verification:
+- `cargo fmt --manifest-path server/Cargo.toml --check`: passed.
+- `cargo check --manifest-path server/Cargo.toml`: passed.
+- `cargo test --manifest-path server/Cargo.toml`: passed, 17 tests.
+- `npm run lint`: passed; Rust fmt/check and frontend Vite production build completed.
+Manual/API QA:
+- Live PostgreSQL-backed curl was not run in this Linux environment because `docker` is not installed.
+Known Limits:
+- Real `/games` browser/API integration still needs a PostgreSQL-capable environment to apply Phase 3 migration + seed and hit the running backend.
+- Phase 4 like/favorite/comment behavior and Phase 5 admin/download/file-upload behavior remain out of scope.
+Conflict Notes:
+- Touched shared route module `server/src/routes/mod.rs` and shared error module `server/src/error.rs` in a small sequenced backend pass.
+Next Role Needed:
+- Role C should apply migrations/seeds in a PostgreSQL environment, run real `/api/games` and `/games` integration checks, and then decide whether frontend mock fallback can be treated only as a development fallback.

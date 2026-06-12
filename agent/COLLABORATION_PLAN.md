@@ -937,21 +937,22 @@ npm run lint
 
 Phase 3 后端/数据库待确认事项：
 
-- `games` 表是否完成。
-- `categories` 表是否完成。
-- `tags` 表是否完成。
-- `game_tags` 表是否完成。
-- `screenshots` 表是否完成。
-- seed 假数据是否完成。
-- `GET /api/games` 是否完成。
-- `GET /api/games/:id` 是否完成。
-- `GET /api/categories` 是否完成。
-- `GET /api/tags` 是否完成。
-- 分页参数是否为 `page` / `pageSize`。
-- 筛选参数是否为 `categoryId` / `tagId`。
-- 图片 URL 是完整 URL 还是相对路径。
-- `screenshots` 是包含在详情接口中，还是独立接口。
-- `category` / `tags` 字段格式是否和前端一致。
+- `games` 表已由 `server/migrations/20260612000000_create_games.sql` 定义。
+- `categories` 表已由 `server/migrations/20260612000000_create_games.sql` 定义。
+- `tags` 表已由 `server/migrations/20260612000000_create_games.sql` 定义。
+- `game_tags` 表已由 `server/migrations/20260612000000_create_games.sql` 定义。
+- `screenshots` 表已由 `server/migrations/20260612000000_create_games.sql` 定义。
+- seed 假数据已由 `server/seeds/dev_phase3_games.sql` 提供。
+- `GET /api/games` 已实现，返回 `{ list, total, page, pageSize }`。
+- `GET /api/games/:id` 已实现，详情内嵌 `category`、`tags`、`screenshots`。
+- `GET /api/categories` 已实现。
+- `GET /api/tags` 已实现。
+- 分页参数确认为 `page` / `pageSize`。
+- 筛选参数确认为 `categoryId` / `tagId`。
+- 图片 URL 当前按数据库中存储的相对/原样字符串返回；开发 seed 暂用空字符串占位。
+- `screenshots` 包含在详情接口中，不提供独立接口。
+- `category` / `tags` 字段格式为 `{ id, name, slug }`，与前端一致。
+- 仍需在可用 PostgreSQL 环境中跑真实 `/games` 前后端联调。
 
 ### 11.3 Comment 字段
 

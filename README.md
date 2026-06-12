@@ -67,10 +67,10 @@
 > 目标：先做出公开浏览，管理员功能放 Phase 5
 
 **后端：**
-- [ ] Game / Category / Tag Model + 建表
-- [ ] 游戏列表 API（分页 + 分类筛选）
-- [ ] 游戏详情 API
-- [ ] 分类 / 标签 API
+- [x] Game / Category / Tag Model + 建表（已新增 `server/migrations/20260612000000_create_games.sql`，覆盖 `games` / `categories` / `tags` / `game_tags` / `screenshots`）
+- [x] 游戏列表 API（分页 + 分类筛选，`GET /api/games?page=1&pageSize=12&categoryId=1&tagId=2`）
+- [x] 游戏详情 API（`GET /api/games/:id`，详情内嵌 `category` / `tags` / `screenshots`）
+- [x] 分类 / 标签 API（`GET /api/categories` / `GET /api/tags`）
 
 **前端：**
 - [x] 游戏列表页（卡片展示 + 分页 + 分类筛选 + 标签筛选 + URL query 状态同步）
@@ -81,7 +81,7 @@
 - [x] 路由接入：`/games`、`/games/:id`；`/games` 已通过 `meta.label` 显示在 Header 导航中
 
 **数据：**
-- [ ] 准备一批 seed 假数据（方便联调）
+- [x] 准备一批 seed 假数据（`server/seeds/dev_phase3_games.sql`，由 `setupDatabase.sh` / `setupDatabase.bat` 自动应用）
 
 **Phase 3 前端状态说明：**
 - [x] `npm --prefix client run build` 已通过。
@@ -91,13 +91,14 @@
 - [ ] 真实后端联调尚未完成，不能将 mock fallback 标记为接口完成。
 
 **Phase 3 后端待确认：**
-- [ ] `games` / `categories` / `tags` / `game_tags` / `screenshots` 表是否完成。
-- [ ] `GET /api/games`、`GET /api/games/:id`、`GET /api/categories`、`GET /api/tags` 是否完成。
-- [ ] 分页参数是否为 `page` / `pageSize`。
-- [ ] 筛选参数是否为 `categoryId` / `tagId`。
-- [ ] 图片 URL 是完整 URL 还是相对路径。
-- [ ] `screenshots` 是包含在详情接口中，还是提供独立接口。
-- [ ] `category` / `tags` 字段格式是否和前端契约一致。
+- [x] `games` / `categories` / `tags` / `game_tags` / `screenshots` 表已通过 SQL migration 定义。
+- [x] `GET /api/games`、`GET /api/games/:id`、`GET /api/categories`、`GET /api/tags` 已在 Rust 后端实现。
+- [x] 分页参数确认为 `page` / `pageSize`。
+- [x] 筛选参数确认为 `categoryId` / `tagId`。
+- [x] 图片 URL 当前按数据库中存储的相对/原样字符串返回；开发 seed 暂用空字符串占位。
+- [x] `screenshots` 包含在详情接口中，不新增独立截图接口。
+- [x] `category` / `tags` 字段使用 `{ id, name, slug }`，与前端契约一致。
+- [ ] 在可用 PostgreSQL 环境中执行 Phase 3 migration + seed 后，跑通真实 `/games` 前后端联调并移除对 mock fallback 的依赖判断。
 
 ### Phase 4 — 互动功能（前后端可并行）
 
@@ -163,6 +164,7 @@ NoneWhite_Site/
 │   ├── .env.example           # 后端环境变量模板
 │   ├── Cargo.toml
 │   ├── migrations/            # SQL migration 文件
+│   ├── seeds/                 # 本地开发 seed 数据
 │   └── src/
 │       ├── config.rs          # 配置
 │       ├── db.rs              # PostgreSQL 连接池
@@ -233,8 +235,10 @@ docker compose up -d    # 启动本地 PostgreSQL，数据保存在 Docker volum
 # Windows
 setupDatabase.bat
 
-# 如需手动应用 migration，可在 docker compose 启动后执行：
+# 如需手动应用 migration，可在 docker compose 启动后按文件名顺序执行：
 docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/migrations/20260605000000_create_users.sql
+docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/migrations/20260612000000_create_games.sql
+docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/seeds/dev_phase3_games.sql
 
 # 前端（脚本会先确保依赖已安装；Vite proxy 已将 /api 请求转发到后端，无需处理 CORS）
 # Linux/macOS

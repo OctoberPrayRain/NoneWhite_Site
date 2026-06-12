@@ -197,3 +197,43 @@ Actual:
 Result: Pass.
 Artifacts: Command output captured in the current development session; no JWT, secret, real user password, database dump, or uploaded image content was recorded in this log.
 Follow-up Needed: Phase 2 can be treated as implementation and integration complete. Remaining open product decision is whether Phase 5 should reuse or upgrade the local avatar/file-upload strategy.
+
+## Handoff - Role C - 2026-06-12 Phase 3 Contracts, Schema, Seed, Docs
+
+Sub-lane: C1 Structure/Schema, C2 API Contract/Field Map, C3 Docs/README, C4 Integration QA
+Task IDs: Phase 3 database/contracts/docs/QA; Phase 2 closeout note
+Changed Files:
+- `server/migrations/20260612000000_create_games.sql`: added `categories`, `tags`, `games`, `game_tags`, and `screenshots` schema with constraints and indexes.
+- `server/seeds/dev_phase3_games.sql`: added local development seed data aligned with the existing Phase 3 frontend mock dataset.
+- `setupDatabase.sh`, `setupDatabase.bat`: changed setup scripts to apply all SQL migrations in filename order and then apply `server/seeds/dev_*.sql`.
+- `README.md`: updated Phase 3 backend/data checklist, backend contract decisions, manual migration/seed commands, and directory structure for `server/seeds/`.
+- `agent/COLLABORATION_PLAN.md`: updated Phase 3 backend/database confirmation list with implemented schema/API decisions.
+- `agent/JOURNALIST/A_BACKEND_API_AUTH/A_BACKEND_API_AUTH_LOG.md`: appended Role A handoff for the Phase 3 backend API.
+- `agent/JOURNALIST/C_DATABASE_CONTRACTS_DOCS_QA/C_DATABASE_CONTRACTS_DOCS_QA_LOG.md`: appended this handoff/QA evidence block.
+Contracts Created:
+- Phase 3 SQL migration structure remains SQL-file based under `server/migrations/`.
+- Phase 3 development seed files live under `server/seeds/` and use `dev_` prefix.
+Contracts Changed:
+- `GET /api/games` accepts `page`, `pageSize`, `categoryId`, and `tagId`, and returns `{ list, total, page, pageSize }`.
+- `GET /api/games/{id}` embeds `category`, `tags`, and `screenshots`; no standalone screenshots endpoint is introduced.
+- `category` and `tags` API objects use `{ id, name, slug }`.
+- Phase 2 implementation/integration is treated as closed; the avatar/file upload reuse question is intentionally deferred to Phase 5 and was not decided in this pass.
+Verification:
+- Rust LSP diagnostics could not run because this environment lacks `rust-analyzer` in the active toolchain.
+- `cargo fmt --manifest-path server/Cargo.toml --check`: passed.
+- `sh -n setupDatabase.sh`: passed.
+- `cargo check --manifest-path server/Cargo.toml`: passed.
+- `cargo test --manifest-path server/Cargo.toml`: passed, 17 tests.
+- `npm run lint`: passed; Rust fmt/check and frontend Vite production build completed.
+- `git diff --check`: passed.
+- `docker compose config`: not run successfully because `docker` is not installed in this environment.
+Manual/API/UI QA:
+- Real PostgreSQL migration/seed application and live `/api/games` curl/browser QA were not run in this environment because Docker/PostgreSQL is unavailable.
+Known Limits:
+- A PostgreSQL-capable environment still needs to run `setupDatabase.sh` or `setupDatabase.bat`, start backend/frontend, and verify `/api/games`, `/api/games/{id}`, `/api/categories`, `/api/tags`, `/games`, and `/games/{id}` against real data.
+- Frontend mock fallback remains present for development fallback until real Phase 3 API integration is verified.
+- Phase 4 comments/likes/favorites and Phase 5 admin/download/file-upload decisions remain out of scope.
+Conflict Notes:
+- Shared files modified: `README.md`, `agent/COLLABORATION_PLAN.md`, `setupDatabase.sh`, `setupDatabase.bat`, and backend module registration files.
+Next Role Needed:
+- Run live PostgreSQL QA and append evidence once Docker/PostgreSQL is available.

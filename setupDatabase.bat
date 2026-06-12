@@ -2,7 +2,8 @@
 setlocal
 
 set "SCRIPT_DIR=%~dp0"
-set "MIGRATION_FILE=%SCRIPT_DIR%server\migrations\20260605000000_create_users.sql"
+set "MIGRATIONS_DIR=%SCRIPT_DIR%server\migrations"
+set "SEEDS_DIR=%SCRIPT_DIR%server\seeds"
 
 where docker >nul 2>nul
 if errorlevel 1 (
@@ -45,7 +46,16 @@ echo Error: PostgreSQL did not become ready in time.
 exit /b 1
 
 :postgres_ready
-type "%MIGRATION_FILE%" | docker compose exec -T postgres psql -U "%POSTGRES_USER%" -d "%POSTGRES_DB%"
-if errorlevel 1 exit /b 1
+for %%F in ("%MIGRATIONS_DIR%\*.sql") do (
+  type "%%~fF" | docker compose exec -T postgres psql -U "%POSTGRES_USER%" -d "%POSTGRES_DB%"
+  if errorlevel 1 exit /b 1
+  echo Database migration applied: %%~fF
+)
 
-echo Database migration applied: %MIGRATION_FILE%
+for %%F in ("%SEEDS_DIR%\dev_*.sql") do (
+  if exist "%%~fF" (
+    type "%%~fF" | docker compose exec -T postgres psql -U "%POSTGRES_USER%" -d "%POSTGRES_DB%"
+    if errorlevel 1 exit /b 1
+    echo Development seed applied: %%~fF
+  )
+)
