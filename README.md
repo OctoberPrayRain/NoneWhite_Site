@@ -105,9 +105,16 @@
 ### Phase 4 — 互动功能（前后端可并行）
 
 **后端：**
-- [ ] 评论 API（发表 + 列表 + 回复 + 删除 — 管理员可删任意评论，普通用户只删自己的）
-- [ ] 点赞 API（点赞 / 取消点赞）
-- [ ] 收藏 API（收藏 / 取消收藏 / 列表）
+- [x] 评论 API（发表 + 列表 + 回复 + 删除 — 管理员可删任意评论，普通用户只删自己的）
+- [x] 点赞 API（点赞 / 取消点赞）
+- [x] 收藏 API（收藏 / 取消收藏 / 列表）
+
+**Phase 4 后端状态说明：**
+- [x] 已新增 `server/migrations/20260613000000_create_interactions.sql`，覆盖 `comments` / `likes` / `favorites` 表、级联外键、列表/计数索引和 rollback 说明。
+- [x] 已实现公开评论列表、认证评论发表/删除、认证点赞/取消、认证收藏/取消、认证个人收藏列表 API。
+- [x] 评论内容后端校验：trim 后非空，最多 1000 字符；回复父评论必须属于同一游戏。
+- [x] 点赞和收藏写入幂等，并刷新 `games.likes_count` / `games.favorites_count`。
+- [ ] 真实 PostgreSQL 环境中的 Phase 4 curl happy path / permission path 联调证据待追加；当前代码已通过 Rust 编译和纯逻辑测试。
 
 **前端：**
 - [ ] 评论区组件（支持回复 + 删除自己的评论）
@@ -240,6 +247,7 @@ setupDatabase.bat
 # 如需手动应用 migration，可在 docker compose 启动后按文件名顺序执行：
 docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/migrations/20260605000000_create_users.sql
 docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/migrations/20260612000000_create_games.sql
+docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/migrations/20260613000000_create_interactions.sql
 docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/seeds/dev_phase3_games.sql
 
 # 前端（脚本会先确保依赖已安装；Vite proxy 已将 /api 和 /uploads 请求转发到后端，无需处理 CORS）
@@ -314,6 +322,33 @@ curl -i -X POST http://127.0.0.1:3000/api/users/me/avatar \
 ```
 
 > Phase 2 auth/user/avatar 数据库 happy path 已在 PostgreSQL 环境中完成验证；2026-06-10 又在 Windows + Docker Desktop + PostgreSQL 17 环境中完成注册、登录、当前用户、更新用户名、修改密码、头像上传、静态头像访问和前端个人中心头像回显回归。
+
+### Phase 4 后端 API 示例
+
+以下示例需要先应用 Phase 2/3/4 migrations，并启动后端。需要登录的接口只记录占位 token，不能把真实 JWT 写入 README 或协作日志。
+
+```bash
+# 评论列表：公开读取；预期 HTTP 200，body.code=0，data={ list,total,page,pageSize }
+curl -i 'http://127.0.0.1:3000/api/games/1/comments?page=1&pageSize=12'
+
+# 发表评论：预期 HTTP 201，message="Comment created successfully"
+curl -i -X POST http://127.0.0.1:3000/api/games/1/comments \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"content":"很好玩","parentId":null}'
+
+# 点赞 / 取消点赞：幂等，返回 liked 与 likesCount
+curl -i -X POST http://127.0.0.1:3000/api/games/1/like -H 'Authorization: Bearer <token>'
+curl -i -X DELETE http://127.0.0.1:3000/api/games/1/like -H 'Authorization: Bearer <token>'
+
+# 收藏 / 取消收藏：幂等，返回 favorited 与 favoritesCount
+curl -i -X POST http://127.0.0.1:3000/api/games/1/favorite -H 'Authorization: Bearer <token>'
+curl -i -X DELETE http://127.0.0.1:3000/api/games/1/favorite -H 'Authorization: Bearer <token>'
+
+# 我的收藏列表：认证读取，返回现有 GameResponse 分页结构；列表页 screenshots 可为空数组
+curl -i 'http://127.0.0.1:3000/api/users/me/favorites?page=1&pageSize=12' \
+  -H 'Authorization: Bearer <token>'
+```
 
 ### 开发检查
 

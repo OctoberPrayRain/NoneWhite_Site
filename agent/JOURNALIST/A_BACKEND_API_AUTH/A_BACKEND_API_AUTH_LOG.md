@@ -177,3 +177,38 @@ Conflict Notes:
 - Touched shared route module `server/src/routes/mod.rs` and shared error module `server/src/error.rs` in a small sequenced backend pass.
 Next Role Needed:
 - Role C should apply migrations/seeds in a PostgreSQL environment, run real `/api/games` and `/games` integration checks, and then decide whether frontend mock fallback can be treated only as a development fallback.
+
+## Handoff - Role A - 2026-06-13 Phase 4 Interactions Backend
+
+Sub-lane: Phase 4 comments/likes/favorites backend API
+Task IDs: Phase 4 backend interactions
+Changed Files:
+- `server/src/models/interaction.rs`, `server/src/models/mod.rs`: added comment row/owner/parent models for SQLx mapping.
+- `server/src/dto/interactions.rs`, `server/src/dto/mod.rs`: added comment list/create DTOs and like/favorite status response DTOs with camelCase JSON.
+- `server/src/repositories/interaction_repository.rs`, `server/src/repositories/mod.rs`: added SQL access for comments, idempotent likes/favorites, count refreshes, and user favorite game listing.
+- `server/src/services/interaction_service.rs`, `server/src/services/mod.rs`: added comment validation, pagination normalization, game/user existence checks, parent-comment same-game checks, delete permission checks, and favorite list assembly.
+- `server/src/routes/interactions.rs`, `server/src/routes/mod.rs`: registered Phase 4 routes under `/api` and reused `auth::authenticated_user_id` for authenticated writes/listing.
+- `server/src/error.rs`: added `40009`, `40010`, `40301`, and `40404` constructors.
+Contracts Consumed:
+- README Phase 4 backend checklist and user-provided endpoint requirements.
+- Existing Axum/sqlx architecture: handlers return `Json<ApiResponse<T>>` with `AppResult`, use `AppState.db_pool`, and authenticate through `middleware::auth::authenticated_user_id(headers, &state.config.auth)`.
+- `agent/COLLABORATION_PLAN.md` naming/envelope/error conventions.
+Contracts Changed:
+- Phase 4 backend now defines concrete API shapes for comment list/create/delete, like/unlike, favorite/unfavorite, and current-user favorites list.
+- Comment content limit is enforced at 1000 Unicode scalar characters after trimming.
+- Favorite list returns existing `GameListResponse`; list-item screenshots are intentionally empty arrays.
+Verification:
+- Rust LSP diagnostics could not run because `rust-analyzer` is not installed in this environment.
+- Initial `cargo fmt --manifest-path server/Cargo.toml --check` reported formatting diffs; `cargo fmt --manifest-path server/Cargo.toml` was run.
+- `cargo check --manifest-path server/Cargo.toml`: passed.
+- `cargo test --manifest-path server/Cargo.toml interaction_service`: passed, 5 interaction-service tests.
+Manual/API QA:
+- Live PostgreSQL-backed curl QA was not run during this implementation pass because it requires an available PostgreSQL/Docker environment.
+Known Limits:
+- Full Phase 4 DB happy path and permission-path validation still need a PostgreSQL-capable environment: apply migrations, create/login users, create comments/replies, verify admin/user delete rules, and verify like/favorite count refreshes.
+- No frontend code was modified; Phase 4 frontend interaction components remain pending.
+- No Phase 5 admin/download/file-upload work was started.
+Conflict Notes:
+- Touched shared backend route module `server/src/routes/mod.rs` and shared error module `server/src/error.rs` in a narrow backend pass.
+Next Role Needed:
+- Role C should run full verification commands, append contract/docs QA evidence, and in a PostgreSQL-capable environment run live Phase 4 curl checks.

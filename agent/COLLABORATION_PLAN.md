@@ -10,13 +10,13 @@
 
 本文档只定义协作方式、实现顺序、变量规范、接口契约、验证规则和交接规则，不新增 `README.md` 之外的产品范围。任何功能是否要做，以 `README.md` 的 Phase 计划为准；任何实际实现状态，以当前仓库文件和验证结果为准。
 
-当前项目基线（2026-06-10 Role B Phase 3 前端收尾）：
+当前项目基线（2026-06-13 Role A/C Phase 4 后端互动实现）：
 
 - 前端：Vue3 + Vite + Vue Router，位于 `client/`。
 - 后端：Rust 2021 + axum，位于 `server/`。
 - 数据库：PostgreSQL；`docker-compose.yml` 使用 PostgreSQL 17，本次 Phase 2 DB happy path 使用 WSL PostgreSQL 16.14 验证。
-- 已实现：Phase 1 项目骨架；Phase 2 后端 `users` migration、注册/登录、认证、当前用户、资料更新、修改密码、头像上传和静态头像访问；Phase 2 前端登录/注册、认证状态、退出登录、个人中心资料展示/编辑/修改密码、头像上传交互和收藏占位；Phase 3 前端游戏列表页、游戏详情页、游戏 API client、游戏组件、公共状态组件和路由/Header 接入。
-- 未完成/待接入：Phase 3 后端 games/categories/tags/screenshots 相关 schema、seed、真实 API 与前端联调；Phase 4 互动功能、Phase 5 管理后台与资源、Phase 6 搜索和部署。
+- 已实现：Phase 1 项目骨架；Phase 2 后端 `users` migration、注册/登录、认证、当前用户、资料更新、修改密码、头像上传和静态头像访问；Phase 2 前端登录/注册、认证状态、退出登录、个人中心资料展示/编辑/修改密码、头像上传交互和收藏占位；Phase 3 后端 games/categories/tags/screenshots schema、seed、公开浏览 API；Phase 3 前端游戏列表页、游戏详情页、游戏 API client、游戏组件、公共状态组件和路由/Header 接入；Phase 4 后端 comments/likes/favorites migration 与 API。
+- 未完成/待接入：Phase 3 浏览器真实数据联调证据；Phase 4 前端互动组件与真实 API 接入；Phase 4 后端真实 PostgreSQL curl 联调证据；Phase 5 管理后台与资源、Phase 6 搜索和部署。
 
 ---
 
@@ -960,10 +960,53 @@ Phase 3 后端/数据库待确认事项：
 |---|---|---|---|---|
 | 评论 ID | `id` | `id` | `id` | `comment.id` |
 | 用户 ID | `user_id` | `user_id` | `userId` | `userId` |
+| 用户名 | `users.username` | `username` | `username` | `username` |
+| 用户头像 URL | `users.avatar_url` | `avatar_url` | `avatarUrl` | `avatarUrl` |
 | 游戏 ID | `game_id` | `game_id` | `gameId` | `gameId` |
 | 内容 | `content` | `content` | `content` | `content` |
 | 父评论 ID | `parent_id` | `parent_id` | `parentId` | `parentId` |
 | 创建时间 | `created_at` | `created_at` | `createdAt` | `createdAt` |
+
+### 11.4 Like 和 Favorite 字段
+
+| 概念 | 数据库字段 | Rust 字段 | API JSON 字段 | 前端变量 |
+|---|---|---|---|---|
+| 用户 ID | `user_id` | `user_id` | 不单独返回 | `currentUser.id` |
+| 游戏 ID | `game_id` | `game_id` | 不单独返回 | `game.id` |
+| 点赞状态 | `likes` 是否存在行 | `liked` | `liked` | `liked` |
+| 点赞数 | `games.likes_count` | `likes_count` | `likesCount` | `likesCount` |
+| 收藏状态 | `favorites` 是否存在行 | `favorited` | `favorited` | `favorited` |
+| 收藏数 | `games.favorites_count` | `favorites_count` | `favoritesCount` | `favoritesCount` |
+| 创建时间 | `created_at` | `created_at` | 列表排序使用，不单独返回 | 不直接使用 |
+
+### 11.5 Phase 4 互动后端 API 契约摘要
+
+所有接口继续使用统一 envelope `{ code, data, message }`，成功业务码为 `0`，认证接口使用 `Authorization: Bearer <token>`。后端是评论内容和权限校验的最终可信来源；前端可以做体验校验，但不能替代后端。
+
+| Method | Path | Auth | Request DTO | Success HTTP | Success data |
+|---|---|---|---|---|---|
+| `GET` | `/api/games/{gameId}/comments?page=&pageSize=` | 不需要 | query `page` / `pageSize` | 200 | `{ list,total,page,pageSize }`，评论项含 `id,userId,username,avatarUrl,gameId,content,parentId,createdAt` |
+| `POST` | `/api/games/{gameId}/comments` | 需要 | `{ content, parentId? }` | 201 | `CommentResponse`，message 固定 `Comment created successfully` |
+| `DELETE` | `/api/comments/{id}` | 需要 | 无 | 200 | `{}`，message 固定 `Comment deleted successfully` |
+| `POST` | `/api/games/{gameId}/like` | 需要 | 无 | 200 | `{ liked:true, likesCount }` |
+| `DELETE` | `/api/games/{gameId}/like` | 需要 | 无 | 200 | `{ liked:false, likesCount }` |
+| `POST` | `/api/games/{gameId}/favorite` | 需要 | 无 | 200 | `{ favorited:true, favoritesCount }` |
+| `DELETE` | `/api/games/{gameId}/favorite` | 需要 | 无 | 200 | `{ favorited:false, favoritesCount }` |
+| `GET` | `/api/users/me/favorites?page=&pageSize=` | 需要 | query `page` / `pageSize` | 200 | 现有 `GameListResponse`：`{ list,total,page,pageSize }`；列表项 `screenshots` 可为空数组 |
+
+Phase 4 后端错误码：
+
+| 场景 | HTTP | code | data | message |
+|---|---|---|---|---|
+| 评论内容 trim 后为空 | 400 | `40009` | `null` | `Comment content is required` |
+| 评论内容超过 1000 字符 | 400 | `40010` | `null` | `Comment content is too long` |
+| 缺少 token | 401 | `40102` | `null` | `Authentication is required` |
+| token 无效或过期 | 401 | `40103` | `null` | `Token is invalid or expired` |
+| 删除他人评论且非 admin | 403 | `40301` | `null` | `Permission denied` |
+| 游戏不存在 | 404 | `40403` | `null` | `Game not found` |
+| 评论或跨游戏父评论不存在 | 404 | `40404` | `null` | `Comment not found` |
+
+Phase 4 数据库契约：`comments` / `likes` / `favorites` 由 `server/migrations/20260613000000_create_interactions.sql` 创建。`comments.user_id`、`comments.game_id`、`likes.user_id`、`likes.game_id`、`favorites.user_id`、`favorites.game_id` 均级联删除；`comments.parent_id` 自引用级联删除；`likes` 和 `favorites` 以 `(user_id, game_id)` 为主键，写入接口必须幂等并刷新 `games.likes_count` / `games.favorites_count`。
 
 ---
 

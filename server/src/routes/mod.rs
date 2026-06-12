@@ -1,5 +1,6 @@
 mod auth;
 mod games;
+mod interactions;
 mod test;
 mod uploads;
 mod users;
@@ -15,6 +16,7 @@ pub fn api_routes() -> Router<AppState> {
         .route("/api/test", get(test::get_test_status))
         .merge(auth::routes())
         .merge(games::routes())
+        .merge(interactions::routes())
         .merge(users::routes())
         .merge(uploads::routes())
 }

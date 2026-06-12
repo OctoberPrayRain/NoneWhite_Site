@@ -237,3 +237,39 @@ Conflict Notes:
 - Shared files modified: `README.md`, `agent/COLLABORATION_PLAN.md`, `setupDatabase.sh`, `setupDatabase.bat`, and backend module registration files.
 Next Role Needed:
 - Run live PostgreSQL QA and append evidence once Docker/PostgreSQL is available.
+
+## Handoff - Role C - 2026-06-13 Phase 4 Interactions Contracts, Docs, QA
+
+Sub-lane: C1 Structure/Schema, C2 API Contract/Field Map, C3 Docs/README, C4 Integration QA
+Task IDs: Phase 4 backend interactions database/contracts/docs/QA
+Changed Files:
+- `server/migrations/20260613000000_create_interactions.sql`: added `comments`, `likes`, and `favorites` schema with cascade foreign keys, primary keys, indexes, and rollback comment.
+- `README.md`: marked only Phase 4 backend comments/likes/favorites API items complete; left all Phase 4 frontend items unchecked; added backend status notes and Phase 4 curl examples with placeholder tokens only.
+- `agent/COLLABORATION_PLAN.md`: updated current baseline, added Phase 4 comment/like/favorite field maps, API contract summary, error codes, and database contract summary.
+- `agent/JOURNALIST/A_BACKEND_API_AUTH/A_BACKEND_API_AUTH_LOG.md`: appended Role A implementation handoff.
+- `agent/JOURNALIST/C_DATABASE_CONTRACTS_DOCS_QA/C_DATABASE_CONTRACTS_DOCS_QA_LOG.md`: appended this Role C handoff/QA block.
+Contracts Created:
+- Phase 4 SQL migration remains SQL-file based under `server/migrations/` and is applied after `20260612000000_create_games.sql`.
+- `comments` response items include `id`, `userId`, `username`, `avatarUrl`, `gameId`, `content`, `parentId`, and `createdAt`.
+- `likes` and `favorites` use `(user_id, game_id)` primary keys and idempotent API semantics.
+Contracts Changed:
+- Phase 4 backend endpoint list is now explicit in `agent/COLLABORATION_PLAN.md` section 11.5.
+- New error codes are reserved and implemented: `40009`, `40010`, `40301`, `40404`; existing `40403 Game not found` is reused.
+- `GET /api/users/me/favorites` returns existing `GameListResponse`; list-item `screenshots` may be an empty array.
+Verification:
+- Rust LSP diagnostics could not run because `rust-analyzer` is not installed in this environment.
+- Initial `cargo fmt --manifest-path server/Cargo.toml --check` reported formatting diffs; formatting was applied.
+- `cargo check --manifest-path server/Cargo.toml`: passed.
+- `cargo test --manifest-path server/Cargo.toml interaction_service`: passed, 5 tests.
+- Full verification commands are tracked in the active session and should be recorded in the final response after completion.
+Manual/API/UI QA:
+- No frontend implementation or browser QA was performed; this pass intentionally did not modify `client/` source.
+- Live PostgreSQL curl QA was not performed yet in this environment. Required follow-up scenarios: public comment listing, authenticated comment create/reply/delete, non-owner delete `40301`, idempotent like/unlike count refresh, idempotent favorite/unfavorite count refresh, and current-user favorites list.
+Known Limits:
+- README marks backend code/API tasks complete but keeps a separate unchecked note for live PostgreSQL Phase 4 curl evidence.
+- Frontend Phase 4 comments/like/favorite components remain unchecked and pending.
+- Phase 5 admin/download/file-upload remains out of scope.
+Conflict Notes:
+- Shared files modified: `README.md`, `agent/COLLABORATION_PLAN.md`, `server/src/routes/mod.rs`, `server/src/error.rs`, and append-only A/C journals.
+Next Role Needed:
+- In an environment with Docker/PostgreSQL, run `setupDatabase.sh` or `setupDatabase.bat`, start the backend, execute the Phase 4 curl scenarios, and append QA evidence without recording real JWTs or secrets.

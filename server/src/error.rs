@@ -59,6 +59,22 @@ impl AppError {
         Self::new(StatusCode::BAD_REQUEST, 40008, "Avatar file is too large")
     }
 
+    pub const fn comment_content_required() -> Self {
+        Self::new(
+            StatusCode::BAD_REQUEST,
+            40009,
+            "Comment content is required",
+        )
+    }
+
+    pub const fn comment_content_too_long() -> Self {
+        Self::new(
+            StatusCode::BAD_REQUEST,
+            40010,
+            "Comment content is too long",
+        )
+    }
+
     pub const fn invalid_credentials() -> Self {
         Self::new(StatusCode::UNAUTHORIZED, 40101, "Invalid email or password")
     }
@@ -87,6 +103,10 @@ impl AppError {
         )
     }
 
+    pub const fn permission_denied() -> Self {
+        Self::new(StatusCode::FORBIDDEN, 40301, "Permission denied")
+    }
+
     pub const fn user_not_found() -> Self {
         Self::new(StatusCode::NOT_FOUND, 40401, "User not found")
     }
@@ -97,6 +117,10 @@ impl AppError {
 
     pub const fn game_not_found() -> Self {
         Self::new(StatusCode::NOT_FOUND, 40403, "Game not found")
+    }
+
+    pub const fn comment_not_found() -> Self {
+        Self::new(StatusCode::NOT_FOUND, 40404, "Comment not found")
     }
 
     pub const fn username_taken() -> Self {
