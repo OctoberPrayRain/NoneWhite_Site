@@ -9,9 +9,6 @@ use crate::{
     services::auth_service,
 };
 
-const PNG_SIGNATURE: &[u8] = b"\x89PNG\r\n\x1a\n";
-const JPEG_SIGNATURE: &[u8] = b"\xff\xd8\xff";
-
 pub async fn get_current_user(pool: &PgPool, user_id: i64) -> AppResult<UserResponse> {
     let user = user_repository::find_user_by_id(pool, user_id)
         .await
@@ -86,31 +83,6 @@ pub async fn update_avatar(
     })
 }
 
-pub(crate) fn validate_avatar_file(
-    content_type: Option<&str>,
-    bytes: &[u8],
-    max_size_bytes: usize,
-) -> AppResult<&'static str> {
-    if bytes.is_empty() {
-        return Err(AppError::avatar_file_required());
-    }
-
-    if bytes.len() > max_size_bytes {
-        return Err(AppError::avatar_file_too_large());
-    }
-
-    match content_type {
-        Some("image/png") if bytes.starts_with(PNG_SIGNATURE) => Ok("png"),
-        Some("image/jpeg") if bytes.starts_with(JPEG_SIGNATURE) => Ok("jpg"),
-        Some("image/webp") if is_webp(bytes) => Ok("webp"),
-        _ => Err(AppError::avatar_file_type_not_allowed()),
-    }
-}
-
-fn is_webp(bytes: &[u8]) -> bool {
-    bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP"
-}
-
 fn map_update_profile_error(error: sqlx::Error) -> AppError {
     match error {
         sqlx::Error::Database(database_error)
@@ -149,32 +121,5 @@ mod tests {
         .expect_err("avatarUrl should be rejected before DB access");
 
         assert_eq!(error.code, 40005);
-    }
-
-    #[test]
-    fn validate_avatar_file_accepts_png_signature() {
-        let mut bytes = PNG_SIGNATURE.to_vec();
-        bytes.extend_from_slice(b"avatar-bytes");
-
-        let extension =
-            validate_avatar_file(Some("image/png"), &bytes, 1024).expect("valid png should pass");
-
-        assert_eq!(extension, "png");
-    }
-
-    #[test]
-    fn validate_avatar_file_rejects_oversized_file() {
-        let error = validate_avatar_file(Some("image/png"), PNG_SIGNATURE, 4)
-            .expect_err("oversized avatar should fail");
-
-        assert_eq!(error.code, 40008);
-    }
-
-    #[test]
-    fn validate_avatar_file_rejects_unknown_content_type() {
-        let error = validate_avatar_file(Some("text/plain"), b"hello", 1024)
-            .expect_err("text file should fail");
-
-        assert_eq!(error.code, 40007);
     }
 }

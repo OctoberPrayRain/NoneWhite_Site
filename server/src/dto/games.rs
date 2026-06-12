@@ -19,6 +19,48 @@ pub struct GameListParams {
     pub tag_id: Option<i64>,
 }
 
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GameScreenshotRequest {
+    pub url: String,
+    pub sort_order: Option<i32>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateGameRequest {
+    pub title: String,
+    pub developer: String,
+    pub publisher: String,
+    pub release_date: Option<String>,
+    pub description: String,
+    pub cover_url: Option<String>,
+    pub category_id: i64,
+    pub tag_ids: Vec<i64>,
+    pub screenshots: Vec<GameScreenshotRequest>,
+}
+
+pub type UpdateGameRequest = CreateGameRequest;
+
+#[derive(Clone, Debug)]
+pub struct ValidatedGameInput {
+    pub title: String,
+    pub developer: String,
+    pub publisher: String,
+    pub release_date: Option<sqlx::types::chrono::NaiveDate>,
+    pub description: String,
+    pub cover_url: Option<String>,
+    pub category_id: i64,
+    pub tag_ids: Vec<i64>,
+    pub screenshots: Vec<ValidatedScreenshotInput>,
+}
+
+#[derive(Clone, Debug)]
+pub struct ValidatedScreenshotInput {
+    pub url: String,
+    pub sort_order: i32,
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CategoryResponse {

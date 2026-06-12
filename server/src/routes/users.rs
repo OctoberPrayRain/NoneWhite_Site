@@ -6,7 +6,6 @@ use axum::{
     Router,
 };
 use serde_json::{json, Value};
-use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::fs;
 
 use crate::{
@@ -16,7 +15,7 @@ use crate::{
     error::{AppError, AppResult},
     middleware::auth,
     response::ApiResponse,
-    services::user_service,
+    services::{upload_service, user_service},
     state::AppState,
 };
 
@@ -86,7 +85,7 @@ async fn upload_avatar(
             .bytes()
             .await
             .map_err(|_| AppError::avatar_file_required())?;
-        let extension = user_service::validate_avatar_file(
+        let extension = upload_service::validate_avatar_file(
             content_type.as_deref(),
             &bytes,
             state.config.upload.max_avatar_size_bytes,
@@ -96,7 +95,7 @@ async fn upload_avatar(
             .await
             .map_err(|_| AppError::internal())?;
 
-        let file_name = avatar_file_name(user_id, extension)?;
+        let file_name = upload_service::stored_file_name("user", user_id, extension)?;
         let file_path = avatar_dir.join(&file_name);
         fs::write(&file_path, &bytes)
             .await
@@ -122,13 +121,4 @@ async fn upload_avatar(
     }
 
     Err(AppError::avatar_file_required())
-}
-
-fn avatar_file_name(user_id: i64, extension: &str) -> AppResult<String> {
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|_| AppError::internal())?
-        .as_millis();
-
-    Ok(format!("user-{user_id}-{timestamp}.{extension}"))
 }

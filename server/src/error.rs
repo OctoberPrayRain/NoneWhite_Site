@@ -75,6 +75,30 @@ impl AppError {
         )
     }
 
+    pub const fn image_file_required() -> Self {
+        Self::new(StatusCode::BAD_REQUEST, 40011, "Image file is required")
+    }
+
+    pub const fn image_file_type_not_allowed() -> Self {
+        Self::new(
+            StatusCode::BAD_REQUEST,
+            40012,
+            "Image file type is not allowed",
+        )
+    }
+
+    pub const fn image_file_too_large() -> Self {
+        Self::new(StatusCode::BAD_REQUEST, 40013, "Image file is too large")
+    }
+
+    pub const fn game_field_invalid() -> Self {
+        Self::new(StatusCode::BAD_REQUEST, 40014, "Game field is invalid")
+    }
+
+    pub const fn download_link_invalid() -> Self {
+        Self::new(StatusCode::BAD_REQUEST, 40015, "Download link is invalid")
+    }
+
     pub const fn invalid_credentials() -> Self {
         Self::new(StatusCode::UNAUTHORIZED, 40101, "Invalid email or password")
     }
@@ -121,6 +145,18 @@ impl AppError {
 
     pub const fn comment_not_found() -> Self {
         Self::new(StatusCode::NOT_FOUND, 40404, "Comment not found")
+    }
+
+    pub const fn category_not_found() -> Self {
+        Self::new(StatusCode::NOT_FOUND, 40405, "Category not found")
+    }
+
+    pub const fn tag_not_found() -> Self {
+        Self::new(StatusCode::NOT_FOUND, 40406, "Tag not found")
+    }
+
+    pub const fn download_link_not_found() -> Self {
+        Self::new(StatusCode::NOT_FOUND, 40407, "Download link not found")
     }
 
     pub const fn username_taken() -> Self {

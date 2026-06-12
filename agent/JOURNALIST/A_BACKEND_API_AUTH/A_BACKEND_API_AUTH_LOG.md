@@ -212,3 +212,46 @@ Conflict Notes:
 - Touched shared backend route module `server/src/routes/mod.rs` and shared error module `server/src/error.rs` in a narrow backend pass.
 Next Role Needed:
 - Role C should run full verification commands, append contract/docs QA evidence, and in a PostgreSQL-capable environment run live Phase 4 curl checks.
+
+
+## Handoff - Role A - 2026-06-12 Phase 5 Admin Resources Backend
+
+Sub-lane: Phase 5 admin middleware, reusable upload, game management, download-link backend API
+Task IDs: README Phase 5 backend scope; Role A responsibilities
+Changed Files:
+- `server/src/middleware/auth.rs`: added `admin_user()` helper that reuses Bearer token verification and `users.role`, preserving existing 401 behavior and returning `40301 Permission denied` for non-admin users.
+- `server/src/config.rs`, `.env.example`, `server/.env.example`: added `MAX_IMAGE_SIZE_BYTES` for reusable admin image uploads while keeping `MAX_AVATAR_SIZE_BYTES` for avatars.
+- `server/src/services/upload_service.rs`: extracted shared PNG/JPEG/WebP MIME + signature + size validation and timestamped file naming used by avatar and admin image upload.
+- `server/src/routes/users.rs`: refactored avatar upload to call shared upload service without changing `POST /api/users/me/avatar` response shape.
+- `server/src/routes/admin_uploads.rs`, `server/src/dto/uploads.rs`, `server/src/routes/uploads.rs`: added admin image upload `POST /api/admin/uploads/images` returning `imageUrl` and static `/uploads/images/{file_name}` serving.
+- `server/src/dto/games.rs`, `server/src/repositories/game_repository.rs`, `server/src/services/game_service.rs`, `server/src/routes/admin_games.rs`: added admin game create/list/update/delete with transactional `games` + `game_tags` + `screenshots` writes.
+- `server/src/models/download_link.rs`, `server/src/dto/download_links.rs`, `server/src/repositories/download_link_repository.rs`, `server/src/services/download_link_service.rs`: added download-link CRUD/read model, DTO, validation, repository, and service layer.
+- `server/src/error.rs`, `server/src/routes/mod.rs`, module `mod.rs` files: registered Phase 5 modules and error codes.
+Contracts Consumed:
+- README Phase 5 backend checklist: admin identity middleware, reusable image upload API, game management CRUD API, download link management API.
+- Existing API envelope contract `{ code, data, message }`, `AppError`, `AppState`, auth middleware, layered DTO/model/repository/service/route split, SQLx/PostgreSQL style.
+- Existing Phase 3 game schema and DTO field mapping; Phase 5 did not duplicate `games`, `categories`, `tags`, `game_tags`, or `screenshots` schema.
+Contracts Changed:
+- New admin-only routes under `/api/admin/...`; non-admin access returns HTTP 403 / `code=40301` / `message="Permission denied"`.
+- New reusable admin image upload contract: `POST /api/admin/uploads/images`, multipart field `image`, response `data.imageUrl`, static `/uploads/images/{file}`.
+- New admin game management contract: `GET/POST /api/admin/games`, `PUT/DELETE /api/admin/games/{gameId}`.
+- New download link contract: admin CRUD under `/api/admin/games/{gameId}/download-links`, public read `GET /api/games/{gameId}/download-links`.
+Verification:
+- Rust LSP diagnostics could not run because `rust-analyzer` is not installed in this environment.
+- `cargo fmt --manifest-path server/Cargo.toml --check`: passed.
+- `cargo check --manifest-path server/Cargo.toml`: passed.
+- `cargo test --manifest-path server/Cargo.toml`: passed, 28 tests.
+- `npm run lint`: passed; Rust fmt/check and frontend Vite production build completed.
+- `sh -n setupDatabase.sh`: passed.
+- `docker compose config`: passed.
+- `git diff --check`: passed.
+Manual/API QA:
+- Live PostgreSQL-backed curl QA was not run because Docker daemon access is denied at `/var/run/docker.sock` and the configured local PostgreSQL endpoint `localhost:5432` returned no response. `psql` exists, but no reachable database was available.
+Known Limits:
+- A PostgreSQL-capable environment still needs to apply `server/migrations/20260614000000_create_download_links.sql`, create/login an admin user, and run admin upload/game CRUD/download-link curl happy paths plus non-admin `40301` permission checks.
+- No frontend source was modified; Phase 5 admin pages and front-end download area remain pending.
+- The public download-link endpoint intentionally returns contracted `extractCode` and `password` fields for frontend display; no real links or secrets were logged.
+Conflict Notes:
+- Touched shared backend route module `server/src/routes/mod.rs`, shared error module `server/src/error.rs`, shared config/env examples, README, and collaboration contract in a single sequenced backend/docs pass.
+Next Role Needed:
+- Role C should run live DB/API QA in an environment with PostgreSQL/Docker access and append evidence without recording real JWTs, production download URLs, or secrets.

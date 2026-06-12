@@ -1,3 +1,5 @@
+mod admin_games;
+mod admin_uploads;
 mod auth;
 mod games;
 mod interactions;
@@ -14,6 +16,8 @@ use crate::state::AppState;
 pub fn api_routes() -> Router<AppState> {
     Router::new()
         .route("/api/test", get(test::get_test_status))
+        .merge(admin_games::routes())
+        .merge(admin_uploads::routes())
         .merge(auth::routes())
         .merge(games::routes())
         .merge(interactions::routes())

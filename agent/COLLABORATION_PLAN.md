@@ -1008,6 +1008,44 @@ Phase 4 后端错误码：
 
 Phase 4 数据库契约：`comments` / `likes` / `favorites` 由 `server/migrations/20260613000000_create_interactions.sql` 创建。`comments.user_id`、`comments.game_id`、`likes.user_id`、`likes.game_id`、`favorites.user_id`、`favorites.game_id` 均级联删除；`comments.parent_id` 自引用级联删除；`likes` 和 `favorites` 以 `(user_id, game_id)` 为主键，写入接口必须幂等并刷新 `games.likes_count` / `games.favorites_count`。
 
+### 11.6 Phase 5 管理后台与资源后端契约摘要
+
+管理员接口继续使用统一 envelope `{ code, data, message }`。所有 `/api/admin/...` 路由需要 `Authorization: Bearer <token>`，缺失/无效 token 沿用现有 `40102` / `40103`；已登录但 `users.role != 'admin'` 返回 HTTP 403、`code=40301`、`message="Permission denied"`。
+
+| Method | Path | Auth | Request DTO | Success HTTP | Success data |
+|---|---|---|---|---|---|
+| `POST` | `/api/admin/uploads/images` | admin | `multipart/form-data` 字段 `image` | 200 | `{ imageUrl }`，URL 形如 `/uploads/images/image-{adminId}-{timestamp}.png` |
+| `GET` | `/api/admin/games?page=&pageSize=&categoryId=&tagId=` | admin | query 同公开游戏列表 | 200 | 现有 `GameListResponse` |
+| `POST` | `/api/admin/games` | admin | `CreateGameRequest` | 201 | `GameResponse` |
+| `PUT` | `/api/admin/games/{gameId}` | admin | `UpdateGameRequest`（同创建字段） | 200 | `GameResponse` |
+| `DELETE` | `/api/admin/games/{gameId}` | admin | 无 | 200 | `{}` |
+| `GET` | `/api/admin/games/{gameId}/download-links` | admin | 无 | 200 | `DownloadLinkResponse[]` |
+| `POST` | `/api/admin/games/{gameId}/download-links` | admin | `DownloadLinkRequest` | 201 | `DownloadLinkResponse` |
+| `PUT` | `/api/admin/games/{gameId}/download-links/{id}` | admin | `DownloadLinkRequest` | 200 | `DownloadLinkResponse` |
+| `DELETE` | `/api/admin/games/{gameId}/download-links/{id}` | admin | 无 | 200 | `{}` |
+| `GET` | `/api/games/{gameId}/download-links` | 不需要 | 无 | 200 | `DownloadLinkResponse[]`，供前台下载区域读取 |
+
+`CreateGameRequest` / `UpdateGameRequest` 字段：`title`, `developer`, `publisher`, `releaseDate?` (`YYYY-MM-DD` 或 `null`), `description`, `coverUrl?`, `categoryId`, `tagIds`, `screenshots`。`screenshots` 项为 `{ url, sortOrder? }`；后端创建/更新时在事务中替换 `game_tags` 和 `screenshots`，并更新 `games.search_text`。
+
+`DownloadLinkResponse` 字段：`id`, `gameId`, `platform`, `url`, `extractCode`, `password`, `fileSize`, `createdAt`, `updatedAt`。`extractCode` / `password` 是产品契约内的下载提取信息，不得记录真实生产链接或真实密码到 README/JOURNALIST 日志。
+
+Phase 5 后端错误码：
+
+| 场景 | HTTP | code | data | message |
+|---|---|---|---|---|
+| 管理员图片未提交 `image` 字段 | 400 | `40011` | `null` | `Image file is required` |
+| 管理员图片 MIME 或签名不允许 | 400 | `40012` | `null` | `Image file type is not allowed` |
+| 管理员图片超过大小限制 | 400 | `40013` | `null` | `Image file is too large` |
+| 游戏创建/更新字段无效 | 400 | `40014` | `null` | `Game field is invalid` |
+| 下载链接字段无效 | 400 | `40015` | `null` | `Download link is invalid` |
+| 非管理员访问管理员接口 | 403 | `40301` | `null` | `Permission denied` |
+| 游戏不存在 | 404 | `40403` | `null` | `Game not found` |
+| 分类不存在 | 404 | `40405` | `null` | `Category not found` |
+| 标签不存在 | 404 | `40406` | `null` | `Tag not found` |
+| 下载链接不存在 | 404 | `40407` | `null` | `Download link not found` |
+
+Phase 5 数据库契约：`download_links` 由 `server/migrations/20260614000000_create_download_links.sql` 创建，字段为 `id`, `game_id`, `platform`, `url`, `extract_code`, `password`, `file_size`, `created_at`, `updated_at`；`game_id` 引用 `games(id) ON DELETE CASCADE`，删除游戏会级联清理下载链接。Phase 5 不重复创建 Phase 3 已有的 `games` / `categories` / `tags` / `game_tags` / `screenshots` 表。
+
 ---
 
 ## 12. 环境变量契约
@@ -1035,6 +1073,7 @@ Phase 2 已新增：
 | `UPLOAD_DIR` | `server/.env.example` 和根 `.env.example` | 上传文件目录 | 默认 `uploads`，相对 `server/`；本地上传目录必须被 Git 忽略 |
 | `UPLOAD_PUBLIC_BASE_URL` | `server/.env.example` 和根 `.env.example` | 上传文件公开 URL 前缀 | 默认 `/uploads` |
 | `MAX_AVATAR_SIZE_BYTES` | `server/.env.example` 和根 `.env.example` | 头像最大大小 | 默认 `2097152`，数字，单位 byte |
+| `MAX_IMAGE_SIZE_BYTES` | `server/.env.example` 和根 `.env.example` | 管理员通用图片最大大小 | 默认 `5242880`，数字，单位 byte |
 
 前端环境变量规则：
 

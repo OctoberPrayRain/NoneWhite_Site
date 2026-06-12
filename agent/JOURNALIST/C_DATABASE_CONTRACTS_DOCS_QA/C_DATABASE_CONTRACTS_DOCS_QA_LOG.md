@@ -273,3 +273,45 @@ Conflict Notes:
 - Shared files modified: `README.md`, `agent/COLLABORATION_PLAN.md`, `server/src/routes/mod.rs`, `server/src/error.rs`, and append-only A/C journals.
 Next Role Needed:
 - In an environment with Docker/PostgreSQL, run `setupDatabase.sh` or `setupDatabase.bat`, start the backend, execute the Phase 4 curl scenarios, and append QA evidence without recording real JWTs or secrets.
+
+
+## Handoff - Role C - 2026-06-12 Phase 5 Backend Contracts, Schema, Docs, QA
+
+Sub-lane: C1 Structure/Schema, C2 API Contract/Field Map, C3 Env/Docs/README, C4 Integration QA
+Task IDs: README Phase 5 backend scope; Role C responsibilities
+Changed Files:
+- `server/migrations/20260614000000_create_download_links.sql`: added Phase 5 `download_links` table with `games(id) ON DELETE CASCADE`, timestamps, and game/id index.
+- `README.md`: marked only implemented Phase 5 backend items complete; left all Phase 5 frontend checkboxes unchecked; added backend status notes, manual migration command, upload config, and Phase 5 API examples using placeholder tokens/links only.
+- `agent/COLLABORATION_PLAN.md`: added Phase 5 field/API/error/database contracts and `MAX_IMAGE_SIZE_BYTES` env contract.
+- `.env.example`, `server/.env.example`: added `MAX_IMAGE_SIZE_BYTES=5242880`.
+- `agent/JOURNALIST/A_BACKEND_API_AUTH/A_BACKEND_API_AUTH_LOG.md`: appended Role A handoff for this backend implementation.
+- `agent/JOURNALIST/C_DATABASE_CONTRACTS_DOCS_QA/C_DATABASE_CONTRACTS_DOCS_QA_LOG.md`: appended this Role C handoff/QA block.
+Contracts Created:
+- Phase 5 SQL migration remains SQL-file based under `server/migrations/` and is applied after `20260613000000_create_interactions.sql`.
+- `download_links` fields: `id`, `game_id`, `platform`, `url`, `extract_code`, `password`, `file_size`, `created_at`, `updated_at`; API JSON maps to camelCase.
+- Admin image upload: `POST /api/admin/uploads/images`, field `image`, success `data.imageUrl`, static `/uploads/images/{file}`.
+- Admin game CRUD: `GET/POST /api/admin/games`, `PUT/DELETE /api/admin/games/{gameId}` using existing `GameResponse` / `GameListResponse`.
+- Download link API: admin CRUD under `/api/admin/games/{gameId}/download-links`; public read under `/api/games/{gameId}/download-links` for frontend download area.
+Contracts Changed:
+- Phase 5 resolves the earlier upload strategy question by reusing local `UPLOAD_DIR` / `UPLOAD_PUBLIC_BASE_URL` with a separate `MAX_IMAGE_SIZE_BYTES` limit for generic admin images.
+- New Phase 5 error codes are documented and implemented: `40011`, `40012`, `40013`, `40014`, `40015`, `40405`, `40406`, `40407`; existing `40102`, `40103`, `40301`, and `40403` are reused.
+Verification:
+- Rust LSP diagnostics could not run because `rust-analyzer` is not installed in this environment.
+- `cargo fmt --manifest-path server/Cargo.toml --check`: passed.
+- `cargo check --manifest-path server/Cargo.toml`: passed.
+- `cargo test --manifest-path server/Cargo.toml`: passed, 28 tests.
+- `npm run lint`: passed; Rust fmt/check and frontend Vite production build completed.
+- `sh -n setupDatabase.sh`: passed.
+- `docker compose config`: passed.
+- `git diff --check`: passed.
+Manual/API/UI QA:
+- No frontend implementation or browser QA was performed; this task intentionally did not modify `client/` source.
+- Live PostgreSQL curl QA was not performed because Docker daemon access is denied and local PostgreSQL at `localhost:5432` returned no response. Required follow-up scenarios: apply Phase 5 migration, verify admin upload, verify admin game CRUD transactionally handles tags/screenshots, verify download-link admin CRUD/public read, verify missing/invalid auth stays 401, and verify non-admin admin-route access returns `40301`.
+Known Limits:
+- README marks backend code/API tasks complete based on compile/tests/static checks, but keeps live Phase 5 PostgreSQL curl evidence unchecked/pending.
+- Frontend Phase 5 admin game page, download-link management page, comment management page, and front-facing download area remain unchecked.
+- Do not record real JWTs, production netdisk URLs, real extract codes/passwords, or uploaded file contents in future QA logs.
+Conflict Notes:
+- Shared files modified: `README.md`, `agent/COLLABORATION_PLAN.md`, `.env.example`, `server/.env.example`, `server/src/routes/mod.rs`, `server/src/error.rs`, and append-only A/C journals.
+Next Role Needed:
+- In a PostgreSQL-capable environment, run `setupDatabase.sh` or `setupDatabase.bat`, start the backend, create/promote an admin user, execute the Phase 5 curl scenarios, and append QA evidence without rewriting historical log entries.

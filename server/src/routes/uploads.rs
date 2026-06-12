@@ -13,7 +13,9 @@ use crate::{
 };
 
 pub fn routes() -> Router<AppState> {
-    Router::new().route("/uploads/avatars/{file_name}", get(get_avatar))
+    Router::new()
+        .route("/uploads/avatars/{file_name}", get(get_avatar))
+        .route("/uploads/images/{file_name}", get(get_image))
 }
 
 async fn get_avatar(
@@ -45,7 +47,40 @@ async fn get_avatar(
     ))
 }
 
+async fn get_image(
+    State(state): State<AppState>,
+    Path(file_name): Path<String>,
+) -> AppResult<impl IntoResponse> {
+    let content_type =
+        image_content_type(&file_name).ok_or_else(AppError::uploaded_file_not_found)?;
+    if !is_safe_file_name(&file_name) {
+        return Err(AppError::uploaded_file_not_found());
+    }
+
+    let file_path = state
+        .config
+        .upload
+        .upload_dir
+        .join("images")
+        .join(file_name);
+    let bytes = fs::read(file_path)
+        .await
+        .map_err(|_| AppError::uploaded_file_not_found())?;
+
+    Ok((
+        [
+            (header::CONTENT_TYPE, content_type),
+            (header::CACHE_CONTROL, "public, max-age=86400"),
+        ],
+        bytes,
+    ))
+}
+
 fn avatar_content_type(file_name: &str) -> Option<&'static str> {
+    image_content_type(file_name)
+}
+
+fn image_content_type(file_name: &str) -> Option<&'static str> {
     if file_name.ends_with(".png") {
         Some("image/png")
     } else if file_name.ends_with(".jpg") {
@@ -81,5 +116,11 @@ mod tests {
         assert_eq!(avatar_content_type("a.jpg"), Some("image/jpeg"));
         assert_eq!(avatar_content_type("a.webp"), Some("image/webp"));
         assert_eq!(avatar_content_type("a.gif"), None);
+    }
+
+    #[test]
+    fn image_content_type_reuses_image_whitelist() {
+        assert_eq!(image_content_type("cover.png"), Some("image/png"));
+        assert_eq!(image_content_type("cover.gif"), None);
     }
 }

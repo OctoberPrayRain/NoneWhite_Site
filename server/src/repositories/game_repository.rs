@@ -1,7 +1,7 @@
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres, Transaction};
 
 use crate::{
-    dto::games::GameListParams,
+    dto::games::{GameListParams, ValidatedGameInput},
     models::game::{CategoryRow, GameRow, ScreenshotRow, TagRow},
 };
 
@@ -121,6 +121,182 @@ pub async fn find_game_by_id(pool: &PgPool, id: i64) -> Result<Option<GameRow>, 
     .bind(id)
     .fetch_optional(pool)
     .await
+}
+
+pub async fn category_exists(pool: &PgPool, id: i64) -> Result<bool, sqlx::Error> {
+    let record =
+        sqlx::query_as::<_, (bool,)>("SELECT EXISTS (SELECT 1 FROM categories WHERE id = $1)")
+            .bind(id)
+            .fetch_one(pool)
+            .await?;
+
+    Ok(record.0)
+}
+
+pub async fn count_existing_tags(pool: &PgPool, tag_ids: &[i64]) -> Result<i64, sqlx::Error> {
+    if tag_ids.is_empty() {
+        return Ok(0);
+    }
+
+    let record = sqlx::query_as::<_, (i64,)>(
+        r#"
+        SELECT COUNT(*)
+        FROM tags
+        WHERE id = ANY($1)
+        "#,
+    )
+    .bind(tag_ids)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(record.0)
+}
+
+pub async fn insert_game(
+    tx: &mut Transaction<'_, Postgres>,
+    input: &ValidatedGameInput,
+    search_text: &str,
+) -> Result<i64, sqlx::Error> {
+    let record = sqlx::query_as::<_, (i64,)>(
+        r#"
+        INSERT INTO games (
+          title,
+          developer,
+          publisher,
+          release_date,
+          description,
+          cover_url,
+          category_id,
+          search_text
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id
+        "#,
+    )
+    .bind(&input.title)
+    .bind(&input.developer)
+    .bind(&input.publisher)
+    .bind(input.release_date)
+    .bind(&input.description)
+    .bind(&input.cover_url)
+    .bind(input.category_id)
+    .bind(search_text)
+    .fetch_one(&mut **tx)
+    .await?;
+
+    Ok(record.0)
+}
+
+pub async fn update_game(
+    tx: &mut Transaction<'_, Postgres>,
+    game_id: i64,
+    input: &ValidatedGameInput,
+    search_text: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        UPDATE games
+        SET title = $2,
+            developer = $3,
+            publisher = $4,
+            release_date = $5,
+            description = $6,
+            cover_url = $7,
+            category_id = $8,
+            search_text = $9,
+            updated_at = NOW()
+        WHERE id = $1
+        "#,
+    )
+    .bind(game_id)
+    .bind(&input.title)
+    .bind(&input.developer)
+    .bind(&input.publisher)
+    .bind(input.release_date)
+    .bind(&input.description)
+    .bind(&input.cover_url)
+    .bind(input.category_id)
+    .bind(search_text)
+    .execute(&mut **tx)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn delete_game(pool: &PgPool, game_id: i64) -> Result<u64, sqlx::Error> {
+    let result = sqlx::query(
+        r#"
+        DELETE FROM games
+        WHERE id = $1
+        "#,
+    )
+    .bind(game_id)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
+
+pub async fn replace_game_tags(
+    tx: &mut Transaction<'_, Postgres>,
+    game_id: i64,
+    tag_ids: &[i64],
+) -> Result<(), sqlx::Error> {
+    sqlx::query("DELETE FROM game_tags WHERE game_id = $1")
+        .bind(game_id)
+        .execute(&mut **tx)
+        .await?;
+
+    for tag_id in tag_ids {
+        sqlx::query(
+            r#"
+            INSERT INTO game_tags (game_id, tag_id)
+            VALUES ($1, $2)
+            "#,
+        )
+        .bind(game_id)
+        .bind(tag_id)
+        .execute(&mut **tx)
+        .await?;
+    }
+
+    Ok(())
+}
+
+pub async fn replace_screenshots(
+    tx: &mut Transaction<'_, Postgres>,
+    game_id: i64,
+    screenshots: &[crate::dto::games::ValidatedScreenshotInput],
+) -> Result<(), sqlx::Error> {
+    sqlx::query("DELETE FROM screenshots WHERE game_id = $1")
+        .bind(game_id)
+        .execute(&mut **tx)
+        .await?;
+
+    for screenshot in screenshots {
+        sqlx::query(
+            r#"
+            INSERT INTO screenshots (game_id, url, sort_order)
+            VALUES ($1, $2, $3)
+            "#,
+        )
+        .bind(game_id)
+        .bind(&screenshot.url)
+        .bind(screenshot.sort_order)
+        .execute(&mut **tx)
+        .await?;
+    }
+
+    Ok(())
+}
+
+pub(crate) fn build_search_text(
+    title: &str,
+    developer: &str,
+    publisher: &str,
+    description: &str,
+) -> String {
+    format!("{title} {developer} {publisher} {description}").to_lowercase()
 }
 
 pub async fn list_tags_for_games(

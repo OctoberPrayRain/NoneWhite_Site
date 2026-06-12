@@ -131,10 +131,17 @@
 ### Phase 5 — 管理后台与资源
 
 **后端：**
-- [ ] 管理员身份中间件
-- [ ] 文件上传接口（图片上传 → 返回 URL，供游戏管理/头像复用）
-- [ ] 游戏管理 CRUD API
-- [ ] 下载链接管理 API
+- [x] 管理员身份中间件（复用 Bearer token 与 `users.role=admin`，非管理员返回 HTTP 403 / `code=40301`）
+- [x] 文件上传接口（图片上传 → 返回 URL，供游戏管理/头像复用；`POST /api/admin/uploads/images`）
+- [x] 游戏管理 CRUD API（管理员专用 `/api/admin/games...`，保持公开 `/api/games` 兼容）
+- [x] 下载链接管理 API（管理员 CRUD + 公开读取 `/api/games/{gameId}/download-links`）
+
+**Phase 5 后端状态说明：**
+- [x] 已新增 `server/migrations/20260614000000_create_download_links.sql`，覆盖 `download_links` 表、`games(id)` 级联外键和按游戏读取索引。
+- [x] 已实现通用管理员图片上传：`multipart/form-data` 字段 `image`，允许 PNG/JPEG/WebP MIME + 文件签名，默认最大 5 MiB，成功返回 `data.imageUrl=/uploads/images/...`，静态读取为 `/uploads/images/{file}`。
+- [x] 已实现管理员游戏创建、列表、更新、删除；创建/更新会校验分类/标签并在事务中替换 `game_tags` 与 `screenshots`。
+- [x] 已实现下载链接管理员创建、列表、更新、删除和前台公开读取，响应字段为 `id, gameId, platform, url, extractCode, password, fileSize, createdAt, updatedAt`。
+- [ ] Live PostgreSQL Phase 5 curl 联调证据待追加；当前仅完成编译/单元测试/静态验证，未声明真实 DB API happy path。
 
 **前端：**
 - [ ] 管理员后台 — 游戏管理页（增删改 + 上传封面/截图）
@@ -255,6 +262,7 @@ setupDatabase.bat
 docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/migrations/20260605000000_create_users.sql
 docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/migrations/20260612000000_create_games.sql
 docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/migrations/20260613000000_create_interactions.sql
+docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/migrations/20260614000000_create_download_links.sql
 docker compose exec -T postgres psql -U nonewhite_user -d nonewhite_site < server/seeds/dev_phase3_games.sql
 
 > Windows `setupDatabase.bat` 支持三种驱动模式：
@@ -284,17 +292,20 @@ npm run dev             # → 127.0.0.1:5173
 
 后端启动代码通过 `CARGO_MANIFEST_DIR` 定位 `server/.env` 与根目录 `.env`，因此通过 `./startBackend.sh`、`startBackend.bat` 或 `cargo run --manifest-path server/Cargo.toml` 启动时使用相同优先级。不要提交真实 `.env`、JWT secret、数据库密码或 token。
 
-### Phase 2 上传配置
+### Phase 2 / Phase 5 上传配置
 
-当前头像上传采用本地开发存储策略：
+当前头像和管理员图片上传采用本地开发存储策略：
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
 | `UPLOAD_DIR` | `uploads` | 相对 `server/` 的上传目录，实际头像目录为 `server/uploads/avatars/` |
 | `UPLOAD_PUBLIC_BASE_URL` | `/uploads` | API 返回给前端的公开 URL 前缀 |
 | `MAX_AVATAR_SIZE_BYTES` | `2097152` | 头像最大 2 MiB |
+| `MAX_IMAGE_SIZE_BYTES` | `5242880` | 管理员通用图片最大 5 MiB |
 
 `POST /api/users/me/avatar` 使用 `multipart/form-data`，字段名为 `avatar`，当前允许 `image/png`、`image/jpeg`、`image/webp`。上传成功后返回 `{ "avatarUrl": "/uploads/avatars/..." }`，并通过后端 `/uploads/avatars/{file}` 静态读取。本地上传文件已通过 `.gitignore` 排除，不要提交真实用户上传内容。
+
+`POST /api/admin/uploads/images` 使用 `multipart/form-data`，字段名为 `image`，需要管理员 Bearer token，复用 PNG/JPEG/WebP MIME 与文件签名校验。上传成功后返回 `{ "imageUrl": "/uploads/images/..." }`，并通过 `/uploads/images/{file}` 静态读取，供游戏封面、截图和后续图片场景复用。
 
 ### Phase 2 后端 API 示例
 
@@ -361,6 +372,44 @@ curl -i -X DELETE http://127.0.0.1:3000/api/games/1/favorite -H 'Authorization: 
 # 我的收藏列表：认证读取，返回现有 GameResponse 分页结构；列表页 screenshots 可为空数组
 curl -i 'http://127.0.0.1:3000/api/users/me/favorites?page=1&pageSize=12' \
   -H 'Authorization: Bearer <token>'
+```
+
+### Phase 5 后端 API 示例
+
+以下示例需要先应用 Phase 2/3/4/5 migrations，并启动后端。管理员接口必须使用 `users.role='admin'` 的登录 token；示例只记录占位 token，不能把真实 JWT、真实网盘链接或生产密码写入 README 或协作日志。
+
+```bash
+# 管理员图片上传：预期 HTTP 200，body.code=0，data.imageUrl 为 /uploads/images/...
+curl -i -X POST http://127.0.0.1:3000/api/admin/uploads/images \
+  -H 'Authorization: Bearer <admin-token>' \
+  -F 'image=@./cover.png;type=image/png'
+
+# 管理员创建游戏：预期 HTTP 201，body.code=0
+curl -i -X POST http://127.0.0.1:3000/api/admin/games \
+  -H 'Authorization: Bearer <admin-token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"示例游戏","developer":"Example Dev","publisher":"Example Pub","releaseDate":"2026-06-12","description":"示例简介","coverUrl":"/uploads/images/cover.png","categoryId":1,"tagIds":[1,2],"screenshots":[{"url":"/uploads/images/shot.png","sortOrder":0}]}'
+
+# 管理员列表/更新/删除游戏：列表复用现有 GameListResponse；更新请求体同创建
+curl -i 'http://127.0.0.1:3000/api/admin/games?page=1&pageSize=12' \
+  -H 'Authorization: Bearer <admin-token>'
+curl -i -X PUT http://127.0.0.1:3000/api/admin/games/1 \
+  -H 'Authorization: Bearer <admin-token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"示例游戏","developer":"Example Dev","publisher":"Example Pub","releaseDate":null,"description":"更新后的简介","coverUrl":"/uploads/images/cover.png","categoryId":1,"tagIds":[1],"screenshots":[]}'
+curl -i -X DELETE http://127.0.0.1:3000/api/admin/games/1 \
+  -H 'Authorization: Bearer <admin-token>'
+
+# 下载链接：管理员 CRUD + 公开读取；示例使用占位链接，避免记录真实资源地址
+curl -i -X POST http://127.0.0.1:3000/api/admin/games/1/download-links \
+  -H 'Authorization: Bearer <admin-token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"platform":"Baidu Netdisk","url":"https://example.invalid/share","extractCode":"abcd","password":"optional-password","fileSize":"1.2 GiB"}'
+curl -i http://127.0.0.1:3000/api/games/1/download-links
+
+# 普通用户访问管理员接口：预期 HTTP 403，body.code=40301，message="Permission denied"
+curl -i 'http://127.0.0.1:3000/api/admin/games?page=1&pageSize=12' \
+  -H 'Authorization: Bearer <user-token>'
 ```
 
 ### 开发检查
