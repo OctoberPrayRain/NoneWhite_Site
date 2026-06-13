@@ -10,13 +10,13 @@
 
 本文档只定义协作方式、实现顺序、变量规范、接口契约、验证规则和交接规则，不新增 `README.md` 之外的产品范围。任何功能是否要做，以 `README.md` 的 Phase 计划为准；任何实际实现状态，以当前仓库文件和验证结果为准。
 
-当前项目基线（2026-06-13 Role A/C Phase 4 后端互动实现）：
+当前项目基线（2026-06-13 Role B Phase 5 前端收尾）：
 
 - 前端：Vue3 + Vite + Vue Router，位于 `client/`。
 - 后端：Rust 2021 + axum，位于 `server/`。
 - 数据库：PostgreSQL；`docker-compose.yml` 使用 PostgreSQL 17，本次 Phase 2 DB happy path 使用 WSL PostgreSQL 16.14 验证。
-- 已实现：Phase 1 项目骨架；Phase 2 后端 `users` migration、注册/登录、认证、当前用户、资料更新、修改密码、头像上传和静态头像访问；Phase 2 前端登录/注册、认证状态、退出登录、个人中心资料展示/编辑/修改密码、头像上传交互和收藏占位；Phase 3 后端 games/categories/tags/screenshots schema、seed、公开浏览 API；Phase 3 前端游戏列表页、游戏详情页、游戏 API client、游戏组件、公共状态组件和路由/Header 接入；Phase 4 后端 comments/likes/favorites migration 与 API。
-- 未完成/待接入：Phase 3 浏览器真实数据联调证据；Phase 4 前端互动组件与真实 API 接入；Phase 4 后端真实 PostgreSQL curl 联调证据；Phase 5 管理后台与资源、Phase 6 搜索和部署。
+- 已实现：Phase 1 项目骨架；Phase 2 后端 `users` migration、注册/登录、认证、当前用户、资料更新、修改密码、头像上传和静态头像访问；Phase 2 前端登录/注册、认证状态、退出登录、个人中心资料展示/编辑/修改密码、头像上传交互和收藏占位；Phase 3 后端 games/categories/tags/screenshots schema、seed、公开浏览 API；Phase 3 前端游戏列表页、游戏详情页、游戏 API client、游戏组件、公共状态组件和路由/Header 接入；Phase 4 后端 comments/likes/favorites migration 与 API；Phase 4 前端评论/点赞/收藏和个人收藏列表；Phase 5 后端管理员图片上传、游戏 CRUD、下载链接管理；Phase 5 前端管理员后台、游戏管理、图片上传、下载链接管理、评论管理和前台下载展示。
+- 未完成/待接入：Phase 6 搜索和部署；Phase 5 后台增强项如全站评论审核搜索、批量删除、Dashboard 统计仍需后端补充接口后再做完整实现。
 
 ---
 
@@ -1045,6 +1045,47 @@ Phase 5 后端错误码：
 | 下载链接不存在 | 404 | `40407` | `null` | `Download link not found` |
 
 Phase 5 数据库契约：`download_links` 由 `server/migrations/20260614000000_create_download_links.sql` 创建，字段为 `id`, `game_id`, `platform`, `url`, `extract_code`, `password`, `file_size`, `created_at`, `updated_at`；`game_id` 引用 `games(id) ON DELETE CASCADE`，删除游戏会级联清理下载链接。Phase 5 不重复创建 Phase 3 已有的 `games` / `categories` / `tags` / `game_tags` / `screenshots` 表。
+
+### 11.7 Phase 5 前端实现与后续后端配合事项
+
+Phase 5 前端已完成以下路由：
+
+```txt
+/admin/games
+/admin/games/new
+/admin/games/:id/edit
+/admin/comments
+```
+
+前端新增 `client/src/api/admin.js`，统一封装：
+
+```txt
+getAdminGames(params, authToken)
+createAdminGame(payload, authToken)
+updateAdminGame(gameId, payload, authToken)
+deleteAdminGame(gameId, authToken)
+uploadAdminImage(file, authToken)
+getAdminDownloadLinks(gameId, authToken)
+createAdminDownloadLink(gameId, payload, authToken)
+updateAdminDownloadLink(gameId, downloadLinkId, payload, authToken)
+deleteAdminDownloadLink(gameId, downloadLinkId, authToken)
+getPublicDownloadLinks(gameId)
+```
+
+管理员路由使用 `meta.requiresAdmin = true`，路由守卫会在需要时调用 `loadCurrentUser()`，并要求 `currentUser.role === 'admin'`。Header 仅对管理员显示“管理后台”入口。
+
+评论管理当前实现方式：
+
+- 前端通过 `GET /api/admin/games` 获取游戏列表。
+- 管理员选择游戏后，通过现有公开接口 `GET /api/games/:gameId/comments?page=&pageSize=` 查看该游戏评论。
+- 删除评论复用现有 `DELETE /api/comments/:id`，后端已支持管理员删除任意评论。
+
+后续如要做完整后台审核，需要后端新增或确认：
+
+- `GET /api/admin/comments?page=&pageSize=&gameId=&userId=&keyword=&dateFrom=&dateTo=`：全站评论审核列表。
+- `DELETE /api/admin/comments/:id` 或继续复用 `DELETE /api/comments/:id`：管理员删除评论语义需在文档中固定。
+- 批量删除评论接口，例如 `DELETE /api/admin/comments/batch`，请求体 `{ ids: [] }`。
+- Dashboard 统计接口，例如 `GET /api/admin/dashboard`，返回游戏数、用户数、评论数、下载链接数和最近活动。
 
 ---
 

@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { routes } from '../router'
@@ -7,9 +7,10 @@ import { useAuthStore } from '../stores/auth'
 
 const route = useRoute()
 const router = useRouter()
-const { authToken, currentUser, logout } = useAuthStore()
+const { authToken, currentUser, loadCurrentUser, logout } = useAuthStore()
 
 const isAuthenticated = computed(() => Boolean(authToken.value))
+const isAdmin = computed(() => currentUser.value?.role === 'admin')
 
 const navRoutes = computed(() =>
   routes.filter((item) => {
@@ -19,6 +20,10 @@ const navRoutes = computed(() =>
 
     if (item.meta.guestOnly) {
       return !isAuthenticated.value
+    }
+
+    if (item.meta.requiresAdmin) {
+      return isAdmin.value
     }
 
     if (item.meta.requiresAuth) {
@@ -36,6 +41,12 @@ function handleLogout() {
     router.push('/login')
   }
 }
+
+onMounted(() => {
+  if (authToken.value && !currentUser.value) {
+    loadCurrentUser().catch(() => {})
+  }
+})
 </script>
 
 <template>

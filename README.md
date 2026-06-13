@@ -53,7 +53,7 @@
 - [x] 在可用 PostgreSQL 环境中执行 `server/migrations/20260605000000_create_users.sql`。
 - [x] 跑通注册 → 登录 → `GET /api/users/me` → 更新用户名 → 修改密码的数据库 happy path。
 - [x] 跑通头像上传 DB happy path，并验证 `/uploads/avatars/...` 静态访问。
-- [ ] Phase 5 决策：确认本地头像存储策略是否在通用文件上传接口中复用或升级（当前 Phase 2 只确认头像本地开发策略）。
+- [x] Phase 5 决策：管理员通用图片上传已复用本地 `UPLOAD_DIR` / `UPLOAD_PUBLIC_BASE_URL` 策略，并使用独立 `MAX_IMAGE_SIZE_BYTES` 限制。
 
 **前端：**
 - [x] 注册 / 登录页面
@@ -141,13 +141,27 @@
 - [x] 已实现通用管理员图片上传：`multipart/form-data` 字段 `image`，允许 PNG/JPEG/WebP MIME + 文件签名，默认最大 5 MiB，成功返回 `data.imageUrl=/uploads/images/...`，静态读取为 `/uploads/images/{file}`。
 - [x] 已实现管理员游戏创建、列表、更新、删除；创建/更新会校验分类/标签并在事务中替换 `game_tags` 与 `screenshots`。
 - [x] 已实现下载链接管理员创建、列表、更新、删除和前台公开读取，响应字段为 `id, gameId, platform, url, extractCode, password, fileSize, createdAt, updatedAt`。
-- [ ] Live PostgreSQL Phase 5 curl 联调证据待追加；当前仅完成编译/单元测试/静态验证，未声明真实 DB API happy path。
+- [x] Live PostgreSQL Phase 5 联调已完成：管理员登录、图片上传、后台游戏创建/更新/删除、下载链接创建/读取/删除、前台下载链接读取、管理员删除评论均已在 Windows + Docker PostgreSQL 环境验证。
 
 **前端：**
-- [ ] 管理员后台 — 游戏管理页（增删改 + 上传封面/截图）
-- [ ] 管理员后台 — 下载链接管理页
-- [ ] 管理员后台 — 评论管理页（查看 + 删除违规评论）
-- [ ] 前台 — 下载区域展示（网盘链接 + 提取码）
+- [x] 管理员后台 — 游戏管理页（增删改 + 上传封面/截图）
+- [x] 管理员后台 — 下载链接管理页（编辑游戏页内管理下载链接）
+- [x] 管理员后台 — 评论管理页（按游戏查看 + 删除违规评论）
+- [x] 前台 — 下载区域展示（网盘链接 + 提取码）
+
+**Phase 5 前端状态说明：**
+- [x] 新增 `client/src/api/admin.js`，封装管理员游戏管理、图片上传、下载链接管理和公开下载链接读取。
+- [x] 新增 `/admin/games`、`/admin/games/new`、`/admin/games/:id/edit`、`/admin/comments` 管理路由，并接入 `requiresAdmin` 路由守卫。
+- [x] Header 仅在 `currentUser.role === 'admin'` 时显示“管理后台”入口。
+- [x] 后台游戏表单支持封面/截图图片上传后自动回填 URL。
+- [x] 前台游戏详情页已将下载区域从占位切换为真实 `GET /api/games/:gameId/download-links` 展示。
+- [x] `npm --prefix client run build` 已通过。
+- [x] `npm run lint` 已通过。
+- [x] 真实联调通过：管理员接口、图片上传、下载链接管理、前台下载链接读取、评论删除路径均已验证。
+
+**Phase 5 后续后端增强建议：**
+- [ ] 当前评论管理后台基于现有 `GET /api/games/:gameId/comments` 按游戏查看评论，并复用 `DELETE /api/comments/:id` 由管理员删除任意评论；如需全站审核、关键词搜索、按用户/时间筛选，建议后端新增 `GET /api/admin/comments`。
+- [ ] 如需批量删除游戏或评论，建议后端新增批量删除接口，避免前端循环调用单条删除接口。
 
 ### Phase 6 — 搜索与部署
 

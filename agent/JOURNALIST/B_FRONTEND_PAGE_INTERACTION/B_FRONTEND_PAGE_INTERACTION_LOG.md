@@ -288,3 +288,61 @@ Conflict Notes:
 Next Role Needed:
 - Role A/C should provide a browser-verifiable backend environment for Phase 4 happy-path and permission-path UI regression.
 - If Role A adds read endpoints for current-user like/favorite state, Role B should wire those into the detail page to eliminate the current first-click state ambiguity.
+
+## Handoff - Role B 2026-06-13 Phase 5 Admin Frontend
+
+Sub-lane: B12 Admin Game Management, B13 Admin Resources, B14 Public Downloads, B15 Admin Comments
+Task IDs: Phase 5 frontend admin/resources closeout
+Changed Files:
+- `client/src/api/admin.js`
+- `client/src/components/admin/AdminImageUpload.vue`
+- `client/src/components/admin/DownloadLinkEditor.vue`
+- `client/src/components/game/DownloadLinkPanel.vue`
+- `client/src/views/admin/AdminGameListView.vue`
+- `client/src/views/admin/AdminGameFormView.vue`
+- `client/src/views/admin/AdminCommentView.vue`
+- `client/src/views/game/GameDetailView.vue`
+- `client/src/router/index.js`
+- `client/src/components/AppHeader.vue`
+- `client/src/style.css`
+- `README.md`
+- `agent/COLLABORATION_PLAN.md`
+- `agent/JOURNALIST/B_FRONTEND_PAGE_INTERACTION/B_FRONTEND_PAGE_INTERACTION_LOG.md`
+
+Contracts Consumed:
+- `GET /api/admin/games?page=&pageSize=&categoryId=&tagId=`
+- `POST /api/admin/games`
+- `PUT /api/admin/games/:gameId`
+- `DELETE /api/admin/games/:gameId`
+- `POST /api/admin/uploads/images` with `multipart/form-data` field `image`
+- `GET/POST /api/admin/games/:gameId/download-links`
+- `PUT/DELETE /api/admin/games/:gameId/download-links/:id`
+- `GET /api/games/:gameId/download-links`
+- `GET /api/games/:gameId/comments?page=&pageSize=`
+- `DELETE /api/comments/:id`
+
+Contracts Changed:
+- None. Added frontend documentation for Phase 5 backend follow-up needs.
+
+Implementation Notes:
+- Added `client/src/api/admin.js` for Phase 5 admin/resource APIs.
+- Added admin routes `/admin/games`, `/admin/games/new`, `/admin/games/:id/edit`, and `/admin/comments`.
+- Added `requiresAdmin` route guard and admin-only Header entry based on `currentUser.role === 'admin'`.
+- Implemented game list management with filters, pagination, edit/view/delete actions.
+- Implemented create/edit game form with category/tag selection, screenshot rows, and URL fields.
+- Implemented image upload component; uploaded admin images return `/uploads/images/...` and can fill cover/screenshot URLs.
+- Implemented download-link editor inside the game edit page.
+- Replaced the public game-detail download placeholder with `DownloadLinkPanel`.
+- Implemented comment management by selecting a game, listing that game's comments, and deleting comments as admin.
+
+Verification:
+- `npm --prefix client run build`: passed.
+- `npm run lint`: passed.
+- Windows + Docker PostgreSQL 17 integration passed for admin login, image upload, admin game create/update/delete, download-link create/read/delete, public download-link read, and admin comment delete.
+- Frontend Vite routes responded with HTTP 200 for `/admin/games`, `/admin/games/new`, `/admin/games/1/edit`; `/admin/comments` route was added after that check and covered by final build/lint.
+
+Known Limits / Backend Follow-up:
+- Current comment management is per-game because the backend has no global admin comment list endpoint.
+- For full moderation, Role A/C should add `GET /api/admin/comments` with filters such as `gameId`, `userId`, `keyword`, `dateFrom`, `dateTo`, plus pagination.
+- Batch delete for games/comments is not implemented; if needed, backend should expose batch endpoints rather than requiring frontend loops.
+- Dashboard statistics are not implemented; they need a backend aggregate endpoint such as `GET /api/admin/dashboard`.

@@ -6,6 +6,7 @@ import { getGameDetail } from '../../api/games'
 import BaseLoading from '../../components/common/BaseLoading.vue'
 import EmptyState from '../../components/common/EmptyState.vue'
 import CommentSection from '../../components/game/CommentSection.vue'
+import DownloadLinkPanel from '../../components/game/DownloadLinkPanel.vue'
 import FavoriteButton from '../../components/game/FavoriteButton.vue'
 import LikeButton from '../../components/game/LikeButton.vue'
 import ScreenshotCarousel from '../../components/game/ScreenshotCarousel.vue'
@@ -161,12 +162,6 @@ watch(
 
     <CommentSection :game-id="game.id" />
 
-    <section class="detail-section">
-      <div class="section-heading">
-        <h2>下载区域</h2>
-        <span>Phase 5</span>
-      </div>
-      <p>下载链接与版本信息将在后续阶段接入真实后端数据。</p>
-    </section>
+    <DownloadLinkPanel :game-id="game.id" />
   </article>
 </template>
