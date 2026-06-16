@@ -1,39 +1,36 @@
 <template>
   <section class="hero-section">
-    <div class="eyebrow">Phase 1 · Project Skeleton</div>
-    <h1>空白分享站前端骨架已就绪</h1>
+    <div class="eyebrow">Welcome to NoneWhite</div>
+    <h1>探索<span class="no-break">独立游戏世界</span></h1>
     <p class="hero-copy">
-      当前阶段完成 Vite + Vue3 初始化、基础布局、路由框架和后端测试接口联调入口，
-      为后续用户系统、游戏浏览和互动功能打好基础。
+      在这里发现、分享和交流最好玩的<span class="no-break">独立游戏</span>，建立属于你的游戏库，与<span class="no-break">志同道合</span>的玩家相遇。
     </p>
     <div class="hero-actions">
-      <RouterLink class="primary-button" to="/test-api">验证后端 API</RouterLink>
-      <a class="secondary-button" href="https://vuejs.org/" target="_blank" rel="noreferrer">
-        Vue 文档
-      </a>
+      <RouterLink class="primary-button" to="/games">浏览游戏</RouterLink>
+      <RouterLink class="secondary-button" to="/register">加入我们</RouterLink>
     </div>
   </section>
 
-  <section class="feature-grid" aria-label="Phase 1 前端能力">
+  <section class="feature-grid" aria-label="核心功能">
     <article class="feature-card">
       <span>01</span>
-      <h2>Vue3 前端项目</h2>
-      <p>使用 Vite 初始化，保留轻量的 JavaScript 结构。</p>
+      <h2>海量游戏</h2>
+      <p>发现全球优质<span class="no-break">独立游戏</span>资源，<span class="no-break">获取</span>详尽介绍与评测。</p>
     </article>
     <article class="feature-card">
       <span>02</span>
-      <h2>基础布局</h2>
-      <p>Header、Footer 与页面容器已经抽离为可扩展框架。</p>
+      <h2>玩家社区</h2>
+      <p>分享你的游戏体验，结识更多<span class="no-break">同样</span>热爱游戏的朋友。</p>
     </article>
     <article class="feature-card">
       <span>03</span>
-      <h2>路由框架</h2>
-      <p>当前仅包含首页和联调验证页，避免提前引入后续阶段功能。</p>
+      <h2>个人游戏库</h2>
+      <p>记录你的游戏历程，管理收藏和游玩状态。</p>
     </article>
     <article class="feature-card">
       <span>04</span>
-      <h2>代理联调</h2>
-      <p>前端通过 <code>/api</code> 代理访问 Rust 后端。</p>
+      <h2>安全下载</h2>
+      <p>提供可靠的资源<span class="no-break">获取</span>渠道，<span class="no-break">保障</span>玩家的下载体验。</p>
     </article>
   </section>
 </template>

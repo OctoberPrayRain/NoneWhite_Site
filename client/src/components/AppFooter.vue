@@ -1,6 +1,6 @@
 <template>
   <footer class="site-footer">
-    <p>NoneWhite_Site · Galgame 分享交流社区项目</p>
-    <p>Phase 1 frontend shell · Vue3 + Vite</p>
+    <p>NoneWhite · Galgame 分享交流社区</p>
+    <p>致力于独立游戏分享与交流的玩家社区</p>
   </footer>
 </template>
