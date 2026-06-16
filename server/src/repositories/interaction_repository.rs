@@ -8,6 +8,41 @@ use crate::{
     },
 };
 
+const COUNT_USER_FAVORITES_SQL: &str = r#"
+        SELECT COUNT(*)
+        FROM favorites f
+        INNER JOIN games g ON g.id = f.game_id
+        WHERE f.user_id = $1
+          AND g.approval_status = 'approved'
+        "#;
+
+const LIST_USER_FAVORITES_SQL: &str = r#"
+        SELECT
+          g.id,
+          g.title,
+          g.developer,
+          g.publisher,
+          g.release_date,
+          g.description,
+          g.cover_url,
+          g.category_id,
+          c.name AS category_name,
+          c.slug AS category_slug,
+          g.likes_count,
+          g.favorites_count,
+          g.approval_status,
+          g.submitted_by_user_id,
+          g.reviewed_by_user_id,
+          g.reviewed_at
+        FROM favorites f
+        INNER JOIN games g ON g.id = f.game_id
+        INNER JOIN categories c ON c.id = g.category_id
+        WHERE f.user_id = $1
+          AND g.approval_status = 'approved'
+        ORDER BY f.created_at DESC, g.id DESC
+        LIMIT $2 OFFSET $3
+        "#;
+
 pub async fn count_comments(pool: &PgPool, game_id: i64) -> Result<i64, sqlx::Error> {
     let record = sqlx::query_as::<_, (i64,)>(
         r#"
@@ -256,16 +291,10 @@ pub async fn refresh_favorites_count(
 }
 
 pub async fn count_user_favorites(pool: &PgPool, user_id: i64) -> Result<i64, sqlx::Error> {
-    let record = sqlx::query_as::<_, (i64,)>(
-        r#"
-        SELECT COUNT(*)
-        FROM favorites
-        WHERE user_id = $1
-        "#,
-    )
-    .bind(user_id)
-    .fetch_one(pool)
-    .await?;
+    let record = sqlx::query_as::<_, (i64,)>(COUNT_USER_FAVORITES_SQL)
+        .bind(user_id)
+        .fetch_one(pool)
+        .await?;
 
     Ok(record.0)
 }
@@ -277,34 +306,12 @@ pub async fn list_user_favorites(
 ) -> Result<Vec<GameRow>, sqlx::Error> {
     let offset = (params.page - 1) * params.page_size;
 
-    sqlx::query_as::<_, GameRow>(
-        r#"
-        SELECT
-          g.id,
-          g.title,
-          g.developer,
-          g.publisher,
-          g.release_date,
-          g.description,
-          g.cover_url,
-          g.category_id,
-          c.name AS category_name,
-          c.slug AS category_slug,
-          g.likes_count,
-          g.favorites_count
-        FROM favorites f
-        INNER JOIN games g ON g.id = f.game_id
-        INNER JOIN categories c ON c.id = g.category_id
-        WHERE f.user_id = $1
-        ORDER BY f.created_at DESC, g.id DESC
-        LIMIT $2 OFFSET $3
-        "#,
-    )
-    .bind(user_id)
-    .bind(params.page_size)
-    .bind(offset)
-    .fetch_all(pool)
-    .await
+    sqlx::query_as::<_, GameRow>(LIST_USER_FAVORITES_SQL)
+        .bind(user_id)
+        .bind(params.page_size)
+        .bind(offset)
+        .fetch_all(pool)
+        .await
 }
 
 pub async fn list_tags_for_games(
@@ -332,4 +339,38 @@ pub async fn list_tags_for_games(
             .map(|(game_id, id, name, slug)| (game_id, TagRow { id, name, slug }))
             .collect()
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn normalized_sql(sql: &str) -> String {
+        sql.split_whitespace().collect::<Vec<_>>().join(" ")
+    }
+
+    #[test]
+    fn count_user_favorites_sql_filters_to_approved_games() {
+        let sql = normalized_sql(COUNT_USER_FAVORITES_SQL);
+
+        assert!(sql.contains("INNER JOIN games g ON g.id = f.game_id"));
+        assert!(sql.contains("g.approval_status = 'approved'"));
+    }
+
+    #[test]
+    fn list_user_favorites_sql_filters_to_approved_games() {
+        let sql = normalized_sql(LIST_USER_FAVORITES_SQL);
+
+        assert!(sql.contains("INNER JOIN games g ON g.id = f.game_id"));
+        assert!(sql.contains("g.approval_status = 'approved'"));
+    }
+
+    #[test]
+    fn list_user_favorites_sql_selects_current_game_row_moderation_fields() {
+        let sql = normalized_sql(LIST_USER_FAVORITES_SQL);
+
+        assert!(sql.contains(
+            "g.favorites_count, g.approval_status, g.submitted_by_user_id, g.reviewed_by_user_id, g.reviewed_at FROM favorites f"
+        ));
+    }
 }

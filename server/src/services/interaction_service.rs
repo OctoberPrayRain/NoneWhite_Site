@@ -25,7 +25,7 @@ pub async fn list_comments(
     game_id: i64,
     query: CommentListQuery,
 ) -> AppResult<CommentListResponse> {
-    ensure_game_exists(pool, game_id).await?;
+    ensure_approved_game_exists(pool, game_id).await?;
 
     let params = normalize_pagination(query.page, query.page_size);
     let total = interaction_repository::count_comments(pool, game_id)
@@ -52,7 +52,7 @@ pub async fn create_comment(
     game_id: i64,
     request: CreateCommentRequest,
 ) -> AppResult<CommentResponse> {
-    ensure_game_exists(pool, game_id).await?;
+    ensure_approved_game_exists(pool, game_id).await?;
     ensure_user_exists(pool, user_id).await?;
     let content = validate_comment_content(&request.content)?;
 
@@ -100,7 +100,7 @@ pub async fn delete_comment(pool: &PgPool, user_id: i64, id: i64) -> AppResult<(
 }
 
 pub async fn like_game(pool: &PgPool, user_id: i64, game_id: i64) -> AppResult<LikeStatusResponse> {
-    ensure_game_exists(pool, game_id).await?;
+    ensure_approved_game_exists(pool, game_id).await?;
     ensure_user_exists(pool, user_id).await?;
 
     let mut tx = pool.begin().await.map_err(|_| AppError::internal())?;
@@ -123,7 +123,7 @@ pub async fn unlike_game(
     user_id: i64,
     game_id: i64,
 ) -> AppResult<LikeStatusResponse> {
-    ensure_game_exists(pool, game_id).await?;
+    ensure_approved_game_exists(pool, game_id).await?;
     ensure_user_exists(pool, user_id).await?;
 
     let mut tx = pool.begin().await.map_err(|_| AppError::internal())?;
@@ -146,7 +146,7 @@ pub async fn favorite_game(
     user_id: i64,
     game_id: i64,
 ) -> AppResult<FavoriteStatusResponse> {
-    ensure_game_exists(pool, game_id).await?;
+    ensure_approved_game_exists(pool, game_id).await?;
     ensure_user_exists(pool, user_id).await?;
 
     let mut tx = pool.begin().await.map_err(|_| AppError::internal())?;
@@ -169,7 +169,7 @@ pub async fn unfavorite_game(
     user_id: i64,
     game_id: i64,
 ) -> AppResult<FavoriteStatusResponse> {
-    ensure_game_exists(pool, game_id).await?;
+    ensure_approved_game_exists(pool, game_id).await?;
     ensure_user_exists(pool, user_id).await?;
 
     let mut tx = pool.begin().await.map_err(|_| AppError::internal())?;
@@ -212,7 +212,7 @@ pub async fn list_my_favorites(
         .into_iter()
         .map(|game| {
             let tags = tags_by_game.get(&game.id).cloned().unwrap_or_default();
-            GameResponse::from_parts(game, tags, Vec::new())
+            GameResponse::public_from_parts(game, tags, Vec::new())
         })
         .collect();
 
@@ -251,12 +251,12 @@ pub(crate) fn validate_comment_content(content: &str) -> AppResult<String> {
     Ok(content.to_string())
 }
 
-async fn ensure_game_exists(pool: &PgPool, game_id: i64) -> AppResult<()> {
+async fn ensure_approved_game_exists(pool: &PgPool, game_id: i64) -> AppResult<()> {
     if game_id <= 0 {
         return Err(AppError::game_not_found());
     }
 
-    game_repository::find_game_by_id(pool, game_id)
+    game_repository::find_approved_game_by_id(pool, game_id)
         .await
         .map_err(|_| AppError::internal())?
         .ok_or_else(AppError::game_not_found)?;
