@@ -1,4 +1,4 @@
-use sqlx::types::chrono::NaiveDate;
+use sqlx::types::chrono::{DateTime, NaiveDate, Utc};
 
 #[derive(Clone, Debug, sqlx::FromRow)]
 pub struct CategoryRow {
@@ -36,4 +36,8 @@ pub struct GameRow {
     pub category_slug: String,
     pub likes_count: i32,
     pub favorites_count: i32,
+    pub approval_status: String,
+    pub submitted_by_user_id: Option<i64>,
+    pub reviewed_by_user_id: Option<i64>,
+    pub reviewed_at: Option<DateTime<Utc>>,
 }
