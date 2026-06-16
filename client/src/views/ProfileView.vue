@@ -211,7 +211,7 @@ onMounted(refreshProfile)
   <section class="page-heading profile-heading">
     <div class="eyebrow">User Center</div>
     <h1>个人中心</h1>
-    <p>这里接入用户系统与 Phase 4 收藏列表能力，可继续维护资料、密码与头像，并查看已收藏的游戏。</p>
+    <p>在这里管理您的个人资料、修改密码、上传头像，并查看您收藏的游戏列表。</p>
   </section>
 
   <section v-if="!isAuthenticated" class="status-panel auth-empty-panel">
@@ -279,7 +279,7 @@ onMounted(refreshProfile)
             <span>用户名</span>
             <input v-model="profileUsername" type="text" autocomplete="username" />
           </label>
-          <p class="form-help">Phase 2 仅允许修改用户名，不提交邮箱或头像 URL。</p>
+          <p class="form-help">目前仅支持修改用户名。</p>
           <p v-if="profileStatus === 'error'" class="notice-box is-error">{{ profileErrorMessage }}</p>
           <p v-if="profileStatus === 'success' && profileMessage" class="notice-box is-success">
             {{ profileMessage }}
@@ -327,7 +327,7 @@ onMounted(refreshProfile)
               @change="handleAvatarChange"
             />
           </label>
-          <p class="form-help">上传会使用 <code>avatar</code> 字段提交到后端，并用返回的 avatarUrl 更新上方头像预览。</p>
+          <p class="form-help">选择头像后点击上传，成功后会自动更新上方预览。</p>
           <p v-if="avatarStatus === 'error'" class="notice-box is-error">{{ avatarErrorMessage }}</p>
           <p v-if="avatarStatus === 'success' && avatarMessage" class="notice-box is-success">
             {{ avatarMessage }}

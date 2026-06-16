@@ -57,11 +57,10 @@ async function handleSubmit() {
 <template>
   <section class="auth-page">
     <div class="auth-copy">
-      <div class="eyebrow">Phase 2 · User System</div>
-      <h1>登录空白分享站</h1>
+      <div class="eyebrow">Welcome Back</div>
+      <h1>欢迎登录</h1>
       <p>
-        使用后端 <code>POST /api/auth/login</code> 契约登录。登录成功后，前端会保存
-        <code>nonewhite_auth_token</code> 并跳转到个人中心。
+        欢迎回到您的游戏世界。在这里管理您的游戏库，参与社区交流，并获取最新独立游戏。
       </p>
     </div>
 
@@ -72,12 +71,12 @@ async function handleSubmit() {
       </div>
 
       <p v-if="authToken" class="notice-box is-success">
-        当前已保存登录状态，可以直接前往 <RouterLink to="/profile">个人中心</RouterLink>。
+        当前已登录，可以直接前往 <RouterLink to="/profile">个人中心</RouterLink>。
       </p>
 
       <label class="form-field">
         <span>邮箱</span>
-        <input v-model="email" type="email" autocomplete="email" placeholder="alice@example.com" />
+        <input v-model="email" type="email" autocomplete="email" placeholder="you@example.com" />
       </label>
 
       <label class="form-field">

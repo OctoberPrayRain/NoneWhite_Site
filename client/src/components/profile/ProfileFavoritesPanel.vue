@@ -104,7 +104,7 @@ watch(() => authToken.value, (token) => {
       <h2>收藏列表</h2>
     </div>
 
-    <p class="form-help">这里展示当前账号已收藏的游戏，数据来自 Phase 4 收藏列表接口。</p>
+    <p class="form-help">这里展示您收藏的所有游戏。</p>
 
     <BaseLoading v-if="loading && !hasFavorites" text="正在加载收藏列表..." />
 
