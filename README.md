@@ -53,7 +53,7 @@
 - [x] 在可用 PostgreSQL 环境中执行 `server/migrations/20260605000000_create_users.sql`。
 - [x] 跑通注册 → 登录 → `GET /api/users/me` → 更新用户名 → 修改密码的数据库 happy path。
 - [x] 跑通头像上传 DB happy path，并验证 `/uploads/avatars/...` 静态访问。
-- [ ] Phase 5 决策：确认本地头像存储策略是否在通用文件上传接口中复用或升级（当前 Phase 2 只确认头像本地开发策略）。
+- [x] Phase 5 决策：确认本地头像存储策略是否在通用文件上传接口中复用或升级（当前 Phase 5 已统一复用本地存储，`UPLOAD_DIR` 为基础目录，头像在 `/uploads/avatars/...`，管理员图片在 `/uploads/images/...`）。
 
 **前端：**
 - [x] 注册 / 登录页面
@@ -89,7 +89,7 @@
 - [x] 浏览器验证 `/games`、`/games?page=1&categoryId=1&tagId=1`、`/games/1?page=1&categoryId=1&tagId=1` 可正常渲染。
 - [x] 当前前端支持 mock fallback，仅作为开发兜底；真实后端接口已实现后，mock fallback 不再代表接口完成状态。
 - [x] 真实后端 API 已在本机 PostgreSQL 环境通过 curl 验证：`/api/games`、`/api/games/1`、`/api/categories`。
-- [ ] 浏览器 `/games` 页面读取真实后端数据的联调证据待追加记录；完成前保留 mock fallback 作为开发兜底。
+- [x] 浏览器 `/games` 页面已通过真实后端 + PostgreSQL seed 数据联调验证；mock fallback 仅保留为接口异常时的开发兜底。
 
 **Phase 3 后端 / 联调状态：**
 - [x] `games` / `categories` / `tags` / `game_tags` / `screenshots` 表已通过 SQL migration 定义。
@@ -100,7 +100,7 @@
 - [x] `screenshots` 包含在详情接口中，不新增独立截图接口。
 - [x] `category` / `tags` 字段使用 `{ id, name, slug }`，与前端契约一致。
 - [x] 已在本机 PostgreSQL 环境执行 Phase 3 migration + seed，并跑通真实后端 API：`GET /api/games`、`GET /api/games/:id`、`GET /api/categories`。
-- [ ] 浏览器 `/games` 真实数据联调证据待追加；mock fallback 保留为接口异常时的开发兜底，不作为完成依据。
+- [x] 浏览器 `/games` 真实数据联调已通过：Vite proxy 读取运行中的 Rust 后端与 PostgreSQL seed 数据，未使用 mock fallback。
 
 ### Phase 4 — 互动功能（前后端可并行）
 
@@ -126,7 +126,7 @@
 - [x] 个人中心已将 Phase 2 的收藏占位切换为真实收藏列表，并接入 `GET /api/users/me/favorites?page=1&pageSize=12`。
 - [x] 新增 `client/src/api/interactions.js`，统一封装评论 / 点赞 / 收藏 / 我的收藏列表接口，并复用现有 API envelope。
 - [x] `npm --prefix client run build` 已通过。
-- [ ] 真实后端运行中的浏览器联调证据待追加；当前已完成真实 API 联调，但本环境缺少 Playwright 所需 Chrome 二进制，尚未补到浏览器自动化证据。前端在后端不可用时仍会保留 Phase 3 详情 mock 数据，但 Phase 4 互动接口本身不提供 mock fallback。
+- [x] 真实后端运行中的浏览器联调已通过：登录一次性用户后在 `/games/:id` 完成点赞、收藏、发表评论，并在页面中看到实时刷新结果。
 
 ### Phase 5 — 管理后台与资源
 
@@ -141,21 +141,42 @@
 - [x] 已实现通用管理员图片上传：`multipart/form-data` 字段 `image`，允许 PNG/JPEG/WebP MIME + 文件签名，默认最大 5 MiB，成功返回 `data.imageUrl=/uploads/images/...`，静态读取为 `/uploads/images/{file}`。
 - [x] 已实现管理员游戏创建、列表、更新、删除；创建/更新会校验分类/标签并在事务中替换 `game_tags` 与 `screenshots`。
 - [x] 已实现下载链接管理员创建、列表、更新、删除和前台公开读取，响应字段为 `id, gameId, platform, url, extractCode, password, fileSize, createdAt, updatedAt`。
-- [ ] Live PostgreSQL Phase 5 curl 联调证据待追加；当前仅完成编译/单元测试/静态验证，未声明真实 DB API happy path。
+- [x] Live PostgreSQL Phase 5 curl 联调已通过：管理员图片上传、管理员游戏 CRUD、下载链接管理员 CRUD + 公开读取、普通用户访问管理员接口 `40301` 均通过真实 DB happy/permission path 验证。
 
 **前端：**
-- [ ] 管理员后台 — 游戏管理页（增删改 + 上传封面/截图）
-- [ ] 管理员后台 — 下载链接管理页
-- [ ] 管理员后台 — 评论管理页（查看 + 删除违规评论）
-- [ ] 前台 — 下载区域展示（网盘链接 + 提取码）
+- [x] 管理员后台 — 游戏管理页（增删改 + 上传封面/截图）
+- [x] 管理员后台 — 下载链接管理页
+- [x] 管理员后台 — 评论管理页（查看 + 删除违规评论）
+- [x] 前台 — 下载区域展示（网盘链接 + 提取码）
+
+**Phase 5 前端状态说明：**
+- [x] 已新增 `/admin` 管理后台路由，管理员权限通过现有 Bearer token 与 `currentUser.role === 'admin'` 判断。
+- [x] 管理后台已接入管理员游戏创建/更新/删除、封面/截图上传、下载链接 CRUD、按游戏查看并删除评论的前端交互。
+- [x] 游戏详情页已接入公开下载链接读取，并展示平台、URL、提取码、密码和文件大小。
+- [x] 已完成浏览器 UI 验证：`/admin` 使用 API stub 验证桌面与移动布局，`/games/1` 使用下载链接 stub 验证前台下载区域展示。
+- [x] Live PostgreSQL Phase 5 前端联调已通过：`/admin` 通过真实管理员账号读取游戏、下载链接和评论资源，`/games/:id` 通过真实公开接口展示下载链接。
 
 ### Phase 6 — 搜索与部署
 
-- [ ] 搜索 API + 前端搜索页（按标题/开发商/标签，`LIKE %keyword%` + `search_text` 辅助字段）
-- [ ] 全局响应式适配
-- [ ] Docker 构建镜像 + docker-compose 启动
-- [ ] Nginx 反向代理配置（托管前端静态文件 + 转发 API 到后端）
-- [ ] 部署上线
+- [x] 搜索 API + 前端搜索页（按标题/开发商/标签，`LIKE %keyword%` + `search_text` 辅助字段）
+- [x] 全局响应式适配（本轮覆盖新增搜索页、管理后台、下载区域与导航换行）
+- [ ] Docker 构建镜像 + docker-compose 启动（可选备用路径；已新增构建配置并完成 Compose 静态校验，当前生产部署按用户要求不使用 Docker）
+- [x] Nginx 反向代理配置（托管前端静态文件 + 转发 API 到后端）
+- [x] 部署上线（直接 Rust 二进制 + systemd + Nginx + 远程 PostgreSQL）
+
+**Phase 6 状态说明：**
+- [x] 后端 `GET /api/games` 已支持 `keyword` 查询参数，服务层会 trim 空白关键词，仓储层使用 `LOWER(g.search_text) LIKE` 参与过滤。
+- [x] 前端已新增 `/search` 页面，支持 URL query 同步、空关键词不请求、关键词搜索、分页和 mock fallback 提示。
+- [x] 已完成浏览器联调验证：`/search?keyword=Browser%20Live` 通过真实后端返回 PostgreSQL 数据，桌面与移动端均可渲染且无横向溢出；mock fallback 仅保留为接口异常时的开发兜底。
+- [x] 已新增 `.dockerignore`、`server/Dockerfile`、`client/Dockerfile`、`docker-compose.deploy.yml` 和 `deploy/nginx.conf`。
+- [x] `docker compose -f docker-compose.deploy.yml config` 已通过静态校验。
+- [x] `docker-compose.deploy.yml` 中的 `JWT_SECRET` / `POSTGRES_PASSWORD` 默认值仅用于本地静态校验或开发演示；真实部署前必须通过环境变量覆盖为私密值。
+- [x] 当前线上部署已按用户要求改为非 Docker 路径：后端 release 二进制安装到远程 `/opt/nonewhite/releases/20260615103109`，`/opt/nonewhite/current` 指向该 release，systemd 服务 `/etc/systemd/system/nonewhite.service` active/running。
+- [x] 前端 `client/dist` 已发布到远程 `/opt/nonewhite/current/public`，并通过 `/var/www/nonewhite` 提供给 Nginx 静态托管。
+- [x] 远程 PostgreSQL 14.23 已在 `127.0.0.1:5432` 上创建 `nonewhite_site` / `nonewhite_user`，Phase 2/3/4/5 migrations 已应用，public schema 表数量为 10。
+- [x] 远程 Nginx 1.18.0 已监听 80 端口，托管 SPA，并将 `/api/` 与 `/uploads/` 反向代理到 `127.0.0.1:3000`；UFW 默认拒绝入站导致公网 HTTP 初次失败后，已仅开放 `80/tcp`。
+- [x] 远程本机 smoke test 已通过：`/api/test` 返回后端测试 JSON，`/api/games?page=1&pageSize=1` 返回 `code=0`，`/` 返回 HTTP 200 HTML；公网 `http://155.94.154.75/api/test` 返回 HTTP 200 后端测试 JSON。
+- [ ] Docker 镜像实际 build 与 `docker compose up` 仍未验证；该路径当前只是备用部署方案，本轮 `docker compose -f docker-compose.deploy.yml build` 因 Docker daemon 代理 `127.0.0.1:2080` 拒绝连接，无法拉取基础镜像 metadata，未运行 `compose up`。
 
 ---
 
