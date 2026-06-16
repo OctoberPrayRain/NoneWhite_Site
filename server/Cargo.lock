@@ -1090,11 +1090,14 @@ name = "nonewhite-site-server"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "base64",
  "bcrypt",
  "dotenvy",
+ "hmac",
  "jsonwebtoken",
  "serde",
  "serde_json",
+ "sha2",
  "sqlx",
  "tokio",
  "tracing",
