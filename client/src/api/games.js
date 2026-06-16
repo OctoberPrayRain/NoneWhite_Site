@@ -1,4 +1,4 @@
-import { ApiError, requestJson } from './http'
+import { ApiError, createAuthHeaders, requestJson } from './http'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_PAGE_SIZE = 12
@@ -155,6 +155,10 @@ export function normalizeGame(game) {
     screenshots: Array.isArray(game.screenshots)
       ? game.screenshots.map(normalizeScreenshot).sort((a, b) => a.sortOrder - b.sortOrder)
       : [],
+    approvalStatus: game.approvalStatus ?? game.approval_status ?? 'approved',
+    submittedByUserId: game.submittedByUserId ?? game.submitted_by_user_id ?? null,
+    reviewedByUserId: game.reviewedByUserId ?? game.reviewed_by_user_id ?? null,
+    reviewedAt: game.reviewedAt ?? game.reviewed_at ?? null,
   }
 }
 
@@ -167,11 +171,24 @@ function getMockGames(params = {}, mockReason = '') {
   const pageSize = parsePositiveInt(params.pageSize, DEFAULT_PAGE_SIZE)
   const categoryId = params.categoryId ? String(params.categoryId) : ''
   const tagId = params.tagId ? String(params.tagId) : ''
+  const keyword = String(params.keyword ?? '').trim().toLowerCase()
 
   const filteredGames = MOCK_GAMES.filter((game) => {
     const matchCategory = !categoryId || String(game.category?.id) === categoryId
     const matchTag = !tagId || game.tags.some((tag) => String(tag.id) === tagId)
-    return matchCategory && matchTag
+    const searchText = [
+      game.title,
+      game.developer,
+      game.publisher,
+      game.description,
+      game.category?.name,
+      ...game.tags.map((tag) => tag.name),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+    const matchKeyword = !keyword || searchText.includes(keyword)
+    return matchCategory && matchTag && matchKeyword
   })
 
   const start = (page - 1) * pageSize
@@ -198,6 +215,11 @@ function buildGameQuery(params = {}) {
 
   if (params.tagId) {
     searchParams.set('tagId', params.tagId)
+  }
+
+  const keyword = String(params.keyword ?? '').trim()
+  if (keyword) {
+    searchParams.set('keyword', keyword)
   }
 
   return searchParams.toString()
@@ -297,4 +319,38 @@ export async function getTags() {
       mockReason: createMockReason(error),
     }
   }
+}
+
+export function normalizeDownloadLink(link) {
+  return {
+    id: Number(link?.id ?? 0),
+    gameId: Number(link?.gameId ?? link?.game_id ?? 0),
+    platform: link?.platform ?? '',
+    url: link?.url ?? '',
+    extractCode: link?.extractCode ?? link?.extract_code ?? '',
+    password: link?.password ?? '',
+    fileSize: link?.fileSize ?? link?.file_size ?? '',
+    createdAt: link?.createdAt ?? link?.created_at ?? '',
+    updatedAt: link?.updatedAt ?? link?.updated_at ?? '',
+  }
+}
+
+// Frontend expected contract:
+// GET /api/games/:id/download-links
+// { code: 0, data: [{ id, gameId, platform, url, extractCode, password, fileSize }], message: 'success' }
+export async function getPublicDownloadLinks(id) {
+  const data = await requestJson(`/api/games/${id}/download-links`)
+  return Array.isArray(data) ? data.map(normalizeDownloadLink) : []
+}
+
+export async function submitGameSubmission(payload, authToken) {
+  const data = await requestJson('/api/games/submissions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...createAuthHeaders(authToken),
+    },
+    body: JSON.stringify(payload),
+  })
+  return normalizeGame(data)
 }
