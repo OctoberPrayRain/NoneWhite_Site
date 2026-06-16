@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:contracts": "node scripts/check-frontend-contracts.mjs",
+    "test:auth": "node scripts/test-auth-store.mjs"
   },
   "dependencies": {
     "vue": "^3.5.34",
