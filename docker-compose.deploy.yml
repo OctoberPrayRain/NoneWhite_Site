@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:17}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nonewhite_site}
+      POSTGRES_USER: ${POSTGRES_USER:-nonewhite_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nonewhite_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      RUST_LOG: ${RUST_LOG:-info}
+      DATABASE_URL: postgres://${POSTGRES_USER:-nonewhite_user}:${POSTGRES_PASSWORD:-nonewhite_password}@postgres:5432/${POSTGRES_DB:-nonewhite_site}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-local-development}
+      JWT_EXPIRES_IN_SECONDS: ${JWT_EXPIRES_IN_SECONDS:-604800}
+      OPENLIST_TOKEN: ${OPENLIST_TOKEN:-}
+      UPLOAD_DIR: /app/uploads
+      UPLOAD_PUBLIC_BASE_URL: /uploads
+      MAX_AVATAR_SIZE_BYTES: ${MAX_AVATAR_SIZE_BYTES:-2097152}
+      MAX_IMAGE_SIZE_BYTES: ${MAX_IMAGE_SIZE_BYTES:-5242880}
+    volumes:
+      - backend_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    restart: unless-stopped
+    ports:
+      - '${WEB_PORT:-8080}:80'
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  backend_uploads:

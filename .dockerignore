@@ -1,0 +1,17 @@
+# Dependencies and build outputs
+node_modules
+client/node_modules
+client/dist
+server/target
+
+# Local config and runtime data
+.env
+server/.env
+server/uploads
+uploads
+postgres_data
+
+# Tool/cache state
+.git
+.trellis/.runtime
+.trellis/.developer
