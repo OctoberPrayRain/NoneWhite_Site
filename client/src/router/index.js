@@ -23,7 +23,6 @@ const routes = [
     name: 'test-api',
     component: TestApiView,
     meta: {
-      label: '联调验证',
     },
   },
   {
@@ -32,12 +31,16 @@ const routes = [
     component: GameListView,
     meta: {
       label: '游戏列表',
+      requiresAuth: true,
     },
   },
   {
     path: '/games/:id',
     name: 'game-detail',
     component: GameDetailView,
+    meta: {
+      requiresAuth: true,
+    },
   },
   {
     path: '/login',
@@ -66,6 +69,34 @@ const routes = [
       requiresAuth: true,
     },
   },
+  {
+    path: '/submit-game',
+    name: 'submit-game',
+    component: () => import('../views/SubmitGameView.vue'),
+    meta: {
+      label: '提交游戏',
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/search',
+    name: 'search',
+    component: () => import('../views/SearchView.vue'),
+    meta: {
+      label: '搜索',
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('../views/AdminConsoleView.vue'),
+    meta: {
+      label: '管理后台',
+      requiresAuth: true,
+      requiresAdmin: true,
+    },
+  },
 ]
 
 const router = createRouter({
@@ -76,8 +107,8 @@ const router = createRouter({
   },
 })
 
-router.beforeEach((to) => {
-  const { authToken } = useAuthStore()
+router.beforeEach(async (to) => {
+  const { authToken, currentUser, loadCurrentUser } = useAuthStore()
   const isAuthenticated = Boolean(authToken.value)
 
   if (to.meta.requiresAuth && !isAuthenticated) {
@@ -87,6 +118,23 @@ router.beforeEach((to) => {
         redirect: to.fullPath,
       },
     }
+  }
+
+  if (to.meta.requiresAdmin && isAuthenticated && !currentUser.value) {
+    try {
+      await loadCurrentUser()
+    } catch {
+      return {
+        path: '/login',
+        query: {
+          redirect: to.fullPath,
+        },
+      }
+    }
+  }
+
+  if (to.meta.requiresAdmin && currentUser.value?.role !== 'admin') {
+    return '/'
   }
 
   if (to.meta.guestOnly && isAuthenticated) {

@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { routes } from '../router'
@@ -7,7 +7,7 @@ import { useAuthStore } from '../stores/auth'
 
 const route = useRoute()
 const router = useRouter()
-const { authToken, currentUser, logout } = useAuthStore()
+const { authToken, currentUser, loadCurrentUser, logout } = useAuthStore()
 
 const isAuthenticated = computed(() => Boolean(authToken.value))
 
@@ -19,6 +19,10 @@ const navRoutes = computed(() =>
 
     if (item.meta.guestOnly) {
       return !isAuthenticated.value
+    }
+
+    if (item.meta.requiresAdmin) {
+      return currentUser.value?.role === 'admin'
     }
 
     if (item.meta.requiresAuth) {
@@ -36,11 +40,19 @@ function handleLogout() {
     router.push('/login')
   }
 }
+
+onMounted(() => {
+  if (authToken.value && !currentUser.value) {
+    loadCurrentUser().catch((error) => {
+      console.warn('Failed to load current user for navigation', error)
+    })
+  }
+})
 </script>
 
 <template>
   <header class="site-header">
-    <RouterLink class="brand" to="/" aria-label="NoneWhite_Site 首页">
+    <RouterLink class="brand" to="/" aria-label="NoneWhite 首页">
       <span class="brand-mark">N</span>
       <span>
         <strong>NoneWhite</strong>
