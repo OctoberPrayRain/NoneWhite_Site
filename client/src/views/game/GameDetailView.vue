@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { getGameDetail } from '../../api/games'
+import { getGameDetail, getPublicDownloadLinks } from '../../api/games'
 import BaseLoading from '../../components/common/BaseLoading.vue'
 import EmptyState from '../../components/common/EmptyState.vue'
 import CommentSection from '../../components/game/CommentSection.vue'
@@ -20,6 +20,9 @@ const loading = ref(false)
 const errorMessage = ref('')
 const mockMessage = ref('')
 const coverFailed = ref(false)
+const downloadLinks = ref([])
+const downloadLoading = ref(false)
+const downloadErrorMessage = ref('')
 
 const backTarget = computed(() => ({
   name: 'games',
@@ -27,6 +30,7 @@ const backTarget = computed(() => ({
 }))
 
 const hasCover = computed(() => game.value?.coverUrl && !coverFailed.value)
+const hasDownloadLinks = computed(() => downloadLinks.value.length > 0)
 const isAuthenticated = computed(() => Boolean(authToken.value))
 
 function handleLikeUpdated(result) {
@@ -51,24 +55,73 @@ function handleFavoriteUpdated(result) {
   }
 }
 
+let gameDetailRequestId = 0
+let downloadLinksRequestId = 0
+
+function isCurrentGameDetailRequest(requestId, routeId) {
+  return requestId === gameDetailRequestId && route.params.id === routeId
+}
+
+function isCurrentDownloadLinksRequest(requestId, gameId) {
+  return requestId === downloadLinksRequestId && game.value?.id === gameId
+}
+
+async function loadDownloadLinks(gameId) {
+  const currentReqId = ++downloadLinksRequestId
+
+  downloadLoading.value = true
+  downloadErrorMessage.value = ''
+  downloadLinks.value = []
+
+  try {
+    const links = await getPublicDownloadLinks(gameId)
+    if (isCurrentDownloadLinksRequest(currentReqId, gameId)) {
+      downloadLinks.value = links
+    }
+  } catch (error) {
+    if (isCurrentDownloadLinksRequest(currentReqId, gameId)) {
+      downloadErrorMessage.value = error instanceof Error ? error.message : '下载链接加载失败'
+    }
+  } finally {
+    if (isCurrentDownloadLinksRequest(currentReqId, gameId)) {
+      downloadLoading.value = false
+    }
+  }
+}
+
 async function loadGameDetail() {
+  const currentReqId = ++gameDetailRequestId
+  const currentRouteId = route.params.id
+  downloadLinksRequestId += 1
+
   loading.value = true
   errorMessage.value = ''
   mockMessage.value = ''
   coverFailed.value = false
   game.value = null
+  downloadLinks.value = []
+  downloadErrorMessage.value = ''
+  downloadLoading.value = false
 
   try {
-    const result = await getGameDetail(route.params.id)
-    game.value = result.game
+    const result = await getGameDetail(currentRouteId)
+    if (isCurrentGameDetailRequest(currentReqId, currentRouteId)) {
+      game.value = result.game
 
-    if (result.isMock) {
-      mockMessage.value = '游戏详情接口暂不可用，当前详情来自前端 mock fallback。'
+      if (result.isMock) {
+        mockMessage.value = '由于网络或服务原因，当前为您展示离线预览详情。'
+      }
+
+      loadDownloadLinks(result.game.id)
     }
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '游戏详情加载失败'
+    if (isCurrentGameDetailRequest(currentReqId, currentRouteId)) {
+      errorMessage.value = error instanceof Error ? error.message : '游戏详情加载失败'
+    }
   } finally {
-    loading.value = false
+    if (isCurrentGameDetailRequest(currentReqId, currentRouteId)) {
+      loading.value = false
+    }
   }
 }
 
@@ -150,7 +203,7 @@ watch(
         <p class="detail-action-tip">
           {{
             isAuthenticated
-              ? '当前后端暂未返回“我是否已点赞/已收藏”的读取状态，按钮会在首次操作后同步当前状态。'
+              ? '点赞与收藏会在操作后同步到你的账号。'
               : '登录后可点赞、收藏并参与评论互动。'
           }}
         </p>
@@ -161,12 +214,39 @@ watch(
 
     <CommentSection :game-id="game.id" />
 
-    <section class="detail-section">
+    <section class="detail-section download-section">
       <div class="section-heading">
         <h2>下载区域</h2>
-        <span>Phase 5</span>
       </div>
-      <p>下载链接与版本信息将在后续阶段接入真实后端数据。</p>
+
+      <p v-if="downloadLoading" class="muted-text">正在加载下载链接...</p>
+      <div v-else-if="downloadErrorMessage" class="notice-box is-error">
+        {{ downloadErrorMessage }}
+      </div>
+      <EmptyState
+        v-else-if="!hasDownloadLinks"
+        title="暂无下载链接"
+        description="管理员添加网盘信息后，这里会展示平台、提取码和文件大小。"
+      />
+      <div v-else class="download-link-grid">
+        <article v-for="link in downloadLinks" :key="link.id" class="download-link-card">
+          <div>
+            <strong>{{ link.platform }}</strong>
+            <span>{{ link.fileSize || '未标注大小' }}</span>
+          </div>
+          <a :href="link.url" target="_blank" rel="noreferrer">下载资源</a>
+          <dl>
+            <div>
+              <dt>提取码</dt>
+              <dd>{{ link.extractCode || '无' }}</dd>
+            </div>
+            <div>
+              <dt>密码</dt>
+              <dd>{{ link.password || '无' }}</dd>
+            </div>
+          </dl>
+        </article>
+      </div>
     </section>
   </article>
 </template>
