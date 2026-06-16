@@ -10,13 +10,13 @@
 
 本文档只定义协作方式、实现顺序、变量规范、接口契约、验证规则和交接规则，不新增 `README.md` 之外的产品范围。任何功能是否要做，以 `README.md` 的 Phase 计划为准；任何实际实现状态，以当前仓库文件和验证结果为准。
 
-当前项目基线（2026-06-13 Role A/C Phase 4 后端互动实现）：
+当前项目基线（2026-06-15 阶段性状态）：
 
 - 前端：Vue3 + Vite + Vue Router，位于 `client/`。
 - 后端：Rust 2021 + axum，位于 `server/`。
-- 数据库：PostgreSQL；`docker-compose.yml` 使用 PostgreSQL 17，本次 Phase 2 DB happy path 使用 WSL PostgreSQL 16.14 验证。
-- 已实现：Phase 1 项目骨架；Phase 2 后端 `users` migration、注册/登录、认证、当前用户、资料更新、修改密码、头像上传和静态头像访问；Phase 2 前端登录/注册、认证状态、退出登录、个人中心资料展示/编辑/修改密码、头像上传交互和收藏占位；Phase 3 后端 games/categories/tags/screenshots schema、seed、公开浏览 API；Phase 3 前端游戏列表页、游戏详情页、游戏 API client、游戏组件、公共状态组件和路由/Header 接入；Phase 4 后端 comments/likes/favorites migration 与 API。
-- 未完成/待接入：Phase 3 浏览器真实数据联调证据；Phase 4 前端互动组件与真实 API 接入；Phase 4 后端真实 PostgreSQL curl 联调证据；Phase 5 管理后台与资源、Phase 6 搜索和部署。
+- 数据库：PostgreSQL；`docker-compose.yml` 默认使用 PostgreSQL 17，Phase 2 DB happy path 使用 WSL PostgreSQL 16.14 验证，本轮 Phase 3/4/5 live QA 使用本机已有 Docker PostgreSQL 15 镜像验证；线上服务器使用远程 PostgreSQL 14.23。
+- 已实现：Phase 1 项目骨架；Phase 2 用户系统（含头像本地上传）；Phase 3 游戏浏览（含真实后端浏览器联调）；Phase 4 互动功能（前后端已接入并通过 live 浏览器联调）；Phase 5 管理后台与资源（含管理员图片本地上传、live curl 与 live 前端联调）；Phase 6 搜索、响应式适配和直接二进制线上部署（Rust release binary + systemd + Nginx + 远程 PostgreSQL）。
+- 未完成/待接入：Phase 6 Docker 镜像 build/up 仅保留为可选备用路径，当前仍受 Docker daemon 代理 `127.0.0.1:2080` 阻断；线上部署已按用户要求使用非 Docker 路径完成。
 
 ---
 

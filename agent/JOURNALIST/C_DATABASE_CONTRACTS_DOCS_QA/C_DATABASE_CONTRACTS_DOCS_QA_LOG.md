@@ -315,3 +315,53 @@ Conflict Notes:
 - Shared files modified: `README.md`, `agent/COLLABORATION_PLAN.md`, `.env.example`, `server/.env.example`, `server/src/routes/mod.rs`, `server/src/error.rs`, and append-only A/C journals.
 Next Role Needed:
 - In a PostgreSQL-capable environment, run `setupDatabase.sh` or `setupDatabase.bat`, start the backend, create/promote an admin user, execute the Phase 5 curl scenarios, and append QA evidence without rewriting historical log entries.
+
+## QA Evidence - Role C - 2026-06-15 Phase 3/4/5 Live PostgreSQL + Browser Closeout
+
+Sub-lane: C4 Integration QA, README status evidence
+Task IDs: `.trellis/tasks/06-14-complete-documented-unfinished-work/`
+Changed Files:
+- `README.md`: marked only newly verified live PostgreSQL/browser evidence complete; kept Docker build/up and online deploy unchecked.
+- `agent/COLLABORATION_PLAN.md`: updated baseline to reflect live Phase 3/4/5 evidence and the remaining Docker proxy blocker.
+- `agent/JOURNALIST/C_DATABASE_CONTRACTS_DOCS_QA/C_DATABASE_CONTRACTS_DOCS_QA_LOG.md`: appended this evidence block.
+Environment:
+- Docker daemon is available, but configured HTTP/HTTPS proxy `127.0.0.1:2080` refuses connections.
+- `psql` / `pg_isready` are not installed on the host.
+- Local `postgres:17` image was unavailable; `./setupDatabase.sh` failed while pulling `postgres:17` because of the Docker daemon proxy.
+- Live PostgreSQL QA used the already available local `postgres:15` image via `POSTGRES_IMAGE=postgres:15 docker compose up -d postgres`, then applied Phase 2/3/4/5 migrations and `server/seeds/dev_phase3_games.sql`.
+Verification:
+- Backend started at `127.0.0.1:3000`; `/api/test` became reachable.
+- Live curl validation passed without printing JWTs: register normal/admin users, promote admin role in the local DB, login, keyword game list, categories/tags, public comments, create comment, like, favorite, favorites list, non-admin admin denial `HTTP 403` / `code=40301`, admin game list, admin image upload, admin game create/search/update/delete, download-link create/public read/update/delete.
+- Live browser QA passed through Vite proxy at `127.0.0.1:5173` with no API stubs: `/games` read PostgreSQL seed data without mock fallback; `/search?keyword=Browser%20Live` read live data without mock fallback; `/games/:id` displayed the live public download link and extract code; unauthenticated `/admin` redirected to `/login?redirect=/admin`; logged-in user could like, favorite, and publish a comment; logged-in admin could select the live test game and read its download link and comment; desktop and mobile checks had no horizontal overflow.
+- Screenshots were captured outside the repository: `live-detail-interaction-qa.png`, `live-admin-route-qa.png`, and `live-mobile-route-qa.png`.
+Known Limits:
+- `docker compose -f docker-compose.deploy.yml build` still failed before project build because base image metadata pulls for `rust:1.87-slim-bookworm`, `debian:bookworm-slim`, `node:22-alpine`, and `nginx:1.27-alpine` were routed through the refused daemon proxy `127.0.0.1:2080`.
+- Because image build failed, deploy `docker compose up` was not run and must remain unchecked.
+- Online deployment remains external-infrastructure work and was not attempted.
+
+## QA Evidence - Role C - 2026-06-15 Direct Binary Deployment Closeout
+
+Sub-lane: C3 Env/Docs/README, C4 Integration QA
+Task IDs: `.trellis/tasks/06-14-complete-documented-unfinished-work/`, direct SSH deployment request
+Changed Files:
+- `README.md`: marked the active non-Docker deployment complete, recorded binary/systemd/Nginx/PostgreSQL evidence, and kept Docker build/up as an unchecked optional fallback path.
+- `agent/COLLABORATION_PLAN.md`: updated the baseline to say Phase 6 direct binary deployment is complete and Docker build/up is not the active production path.
+- `agent/JOURNALIST/C_DATABASE_CONTRACTS_DOCS_QA/C_DATABASE_CONTRACTS_DOCS_QA_LOG.md`: appended this deployment closeout block without rewriting earlier history.
+Remote Environment:
+- SSH target: `155.94.154.75` on port `50721`.
+- Release: `/opt/nonewhite/releases/20260615103109`; active symlink: `/opt/nonewhite/current`.
+- Backend: `/opt/nonewhite/current/nonewhite-site-server` managed by `/etc/systemd/system/nonewhite.service`.
+- Frontend: `/var/www/nonewhite -> /opt/nonewhite/current/public`.
+- Database: PostgreSQL 14.23 on `127.0.0.1:5432`, database `nonewhite_site`, role `nonewhite_user`; migrations applied, table count 10.
+- Edge: Nginx 1.18.0 on port 80, proxying `/api/` and `/uploads/` to `127.0.0.1:3000`; UFW `80/tcp` opened after default-deny blocked public HTTP.
+Verification:
+- Local artifacts built successfully before upload: `npm --prefix client run build` and `cargo build --release --manifest-path server/Cargo.toml`.
+- Remote backend service was active/running under systemd and returned the standard `/api/test` backend test JSON on `127.0.0.1:3000`.
+- Remote Nginx config test passed; remote-local HTTP checks passed for `/api/test`, `/api/games?page=1&pageSize=1`, and `/`.
+- Public HTTP smoke passed after opening `80/tcp`: `http://155.94.154.75/api/test` returned HTTP 200 with the backend test JSON.
+Known Limits:
+- No real secrets, JWTs, passwords, generated environment values, or production database dumps are recorded in this log.
+- Docker image build/up remains unverified because local Docker daemon proxy `127.0.0.1:2080` refused base image metadata pulls; this is no longer a blocker for the active deployment path.
+- HTTPS/domain setup was not requested; existing remote `frps` on port 443 was left untouched.
+Conflict Notes:
+- Shared documentation files changed: `README.md`, `agent/COLLABORATION_PLAN.md`, and this append-only Role C log.
