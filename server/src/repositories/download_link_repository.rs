@@ -19,6 +19,24 @@ pub async fn list_download_links(
     .await
 }
 
+pub async fn find_download_link(
+    pool: &PgPool,
+    game_id: i64,
+    id: i64,
+) -> Result<Option<DownloadLinkRow>, sqlx::Error> {
+    sqlx::query_as::<_, DownloadLinkRow>(
+        r#"
+        SELECT id, game_id, platform, url, extract_code, password, file_size, created_at, updated_at
+        FROM download_links
+        WHERE game_id = $1 AND id = $2
+        "#,
+    )
+    .bind(game_id)
+    .bind(id)
+    .fetch_optional(pool)
+    .await
+}
+
 pub async fn create_download_link(
     pool: &PgPool,
     game_id: i64,
