@@ -25,12 +25,9 @@ onMounted(loadStatus)
 
 <template>
   <section class="page-heading">
-    <div class="eyebrow">GET /api/test</div>
-    <h1>前后端联调验证</h1>
-    <p>
-      本页通过前端相对路径 <code>/api/test</code> 请求后端，Vite dev server 会把
-      <code>/api</code> 自动代理到 <code>http://localhost:3000</code>。
-    </p>
+    <div class="eyebrow">系统诊断</div>
+    <h1>后端连接状态</h1>
+    <p>本页用于确认前端能否连接后端服务，并展示当前服务返回的基础状态。</p>
   </section>
 
   <section class="status-panel" :class="`is-${status}`" aria-live="polite">
@@ -39,7 +36,7 @@ onMounted(loadStatus)
       <h2>接口状态</h2>
     </div>
 
-    <p v-if="status === 'loading'" class="status-message">正在请求后端测试接口...</p>
+    <p v-if="status === 'loading'" class="status-message">正在检查后端服务...</p>
 
     <div v-else-if="status === 'success' && result" class="result-grid">
       <div>
@@ -61,7 +58,7 @@ onMounted(loadStatus)
     </div>
 
     <div v-else class="error-box">
-      <p>请求失败：{{ errorMessage }}</p>
+      <p>{{ errorMessage.startsWith('请求失败') ? errorMessage : `请求失败：${errorMessage}` }}</p>
       <button type="button" @click="loadStatus">重新验证</button>
     </div>
   </section>

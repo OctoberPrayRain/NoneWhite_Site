@@ -92,7 +92,7 @@ async function loadFilters() {
     tags.value = tagResult.list
 
     if (categoryResult.isMock || tagResult.isMock) {
-      appendMockMessage('分类/标签接口暂不可用，当前筛选项来自前端 mock fallback。')
+      appendMockMessage('由于网络或服务原因，当前展示离线预览内容。')
     }
   } finally {
     filtersLoading.value = false
@@ -120,7 +120,7 @@ async function loadGames() {
     page.value = result.page
 
     if (result.isMock) {
-      appendMockMessage('游戏列表接口暂不可用，当前列表来自前端 mock fallback。')
+      appendMockMessage('由于网络或服务原因，当前展示离线预览内容。')
     }
   } catch (error) {
     games.value = []
@@ -170,7 +170,7 @@ watch(
 
 <template>
   <section class="page-heading games-heading">
-    <div class="eyebrow">Phase 3 · Game Browsing</div>
+    <div class="eyebrow">所有游戏</div>
     <h1>游戏列表</h1>
     <p>浏览站内游戏条目，按分类和标签快速筛选，进入详情页查看简介、截图与基础信息。</p>
   </section>
