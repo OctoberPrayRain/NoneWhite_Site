@@ -16,6 +16,8 @@ use crate::{
 const DEFAULT_PAGE: i64 = 1;
 const DEFAULT_PAGE_SIZE: i64 = 12;
 const MAX_PAGE_SIZE: i64 = 50;
+pub(crate) const APPROVAL_STATUS_APPROVED: &str = "approved";
+pub(crate) const APPROVAL_STATUS_PENDING: &str = "pending";
 
 pub async fn list_categories(pool: &PgPool) -> AppResult<Vec<CategoryResponse>> {
     let categories = game_repository::list_categories(pool)
@@ -34,7 +36,32 @@ pub async fn list_tags(pool: &PgPool) -> AppResult<Vec<TagResponse>> {
 }
 
 pub async fn list_games(pool: &PgPool, query: GameListQuery) -> AppResult<GameListResponse> {
-    let params = normalize_query(query);
+    let params = normalize_public_query(query);
+    list_games_by_params(pool, params, GameResponse::public_from_parts).await
+}
+
+pub async fn list_admin_games(pool: &PgPool, query: GameListQuery) -> AppResult<GameListResponse> {
+    let params = normalize_admin_query(query);
+    list_games_by_params(pool, params, GameResponse::from_parts).await
+}
+
+pub async fn list_pending_games(
+    pool: &PgPool,
+    query: GameListQuery,
+) -> AppResult<GameListResponse> {
+    let params = normalize_pending_query(query);
+    list_games_by_params(pool, params, GameResponse::from_parts).await
+}
+
+async fn list_games_by_params(
+    pool: &PgPool,
+    params: GameListParams,
+    build_response: fn(
+        crate::models::game::GameRow,
+        Vec<TagResponse>,
+        Vec<ScreenshotResponse>,
+    ) -> GameResponse,
+) -> AppResult<GameListResponse> {
     let total = game_repository::count_games(pool, &params)
         .await
         .map_err(|_| AppError::internal())?;
@@ -52,7 +79,7 @@ pub async fn list_games(pool: &PgPool, query: GameListQuery) -> AppResult<GameLi
         .into_iter()
         .map(|game| {
             let tags = tags_by_game.get(&game.id).cloned().unwrap_or_default();
-            GameResponse::from_parts(game, tags, Vec::new())
+            build_response(game, tags, Vec::new())
         })
         .collect();
 
@@ -69,7 +96,7 @@ pub async fn get_game_detail(pool: &PgPool, id: i64) -> AppResult<GameResponse> 
         return Err(AppError::game_not_found());
     }
 
-    let game = game_repository::find_game_by_id(pool, id)
+    let game = game_repository::find_approved_game_by_id(pool, id)
         .await
         .map_err(|_| AppError::internal())?
         .ok_or_else(AppError::game_not_found)?;
@@ -86,24 +113,48 @@ pub async fn get_game_detail(pool: &PgPool, id: i64) -> AppResult<GameResponse> 
         .map(ScreenshotResponse::from)
         .collect();
 
-    Ok(GameResponse::from_parts(game, tags, screenshots))
+    Ok(GameResponse::public_from_parts(game, tags, screenshots))
 }
 
 pub async fn create_game(pool: &PgPool, request: CreateGameRequest) -> AppResult<GameResponse> {
+    create_game_with_approval(pool, request, APPROVAL_STATUS_APPROVED, None).await
+}
+
+pub async fn submit_game(
+    pool: &PgPool,
+    user_id: i64,
+    request: CreateGameRequest,
+) -> AppResult<GameResponse> {
+    create_game_with_approval(pool, request, APPROVAL_STATUS_PENDING, Some(user_id)).await
+}
+
+async fn create_game_with_approval(
+    pool: &PgPool,
+    request: CreateGameRequest,
+    approval_status: &str,
+    submitted_by_user_id: Option<i64>,
+) -> AppResult<GameResponse> {
     let input = validate_game_input(request)?;
     ensure_category_exists(pool, input.category_id).await?;
-    ensure_tags_exist(pool, &input.tag_ids).await?;
+    let tag_names = ensure_tags_exist(pool, &input.tag_ids).await?;
 
     let search_text = game_repository::build_search_text(
         &input.title,
         &input.developer,
         &input.publisher,
         &input.description,
+        &tag_names,
     );
     let mut tx = pool.begin().await.map_err(|_| AppError::internal())?;
-    let game_id = game_repository::insert_game(&mut tx, &input, &search_text)
-        .await
-        .map_err(map_game_write_error)?;
+    let game_id = game_repository::insert_game(
+        &mut tx,
+        &input,
+        &search_text,
+        approval_status,
+        submitted_by_user_id,
+    )
+    .await
+    .map_err(map_game_write_error)?;
     game_repository::replace_game_tags(&mut tx, game_id, &input.tag_ids)
         .await
         .map_err(map_game_write_error)?;
@@ -112,7 +163,7 @@ pub async fn create_game(pool: &PgPool, request: CreateGameRequest) -> AppResult
         .map_err(map_game_write_error)?;
     tx.commit().await.map_err(|_| AppError::internal())?;
 
-    get_game_detail(pool, game_id).await
+    get_admin_game_detail(pool, game_id).await
 }
 
 pub async fn update_game(
@@ -127,13 +178,14 @@ pub async fn update_game(
 
     let input = validate_game_input(request)?;
     ensure_category_exists(pool, input.category_id).await?;
-    ensure_tags_exist(pool, &input.tag_ids).await?;
+    let tag_names = ensure_tags_exist(pool, &input.tag_ids).await?;
 
     let search_text = game_repository::build_search_text(
         &input.title,
         &input.developer,
         &input.publisher,
         &input.description,
+        &tag_names,
     );
     let mut tx = pool.begin().await.map_err(|_| AppError::internal())?;
     game_repository::update_game(&mut tx, game_id, &input, &search_text)
@@ -147,7 +199,24 @@ pub async fn update_game(
         .map_err(map_game_write_error)?;
     tx.commit().await.map_err(|_| AppError::internal())?;
 
-    get_game_detail(pool, game_id).await
+    get_admin_game_detail(pool, game_id).await
+}
+
+pub async fn approve_game(
+    pool: &PgPool,
+    game_id: i64,
+    reviewer_user_id: i64,
+) -> AppResult<GameResponse> {
+    if game_id <= 0 {
+        return Err(AppError::game_not_found());
+    }
+
+    let approved_game_id = game_repository::approve_game(pool, game_id, reviewer_user_id)
+        .await
+        .map_err(|_| AppError::internal())?
+        .ok_or_else(AppError::game_not_found)?;
+
+    get_admin_game_detail(pool, approved_game_id).await
 }
 
 pub async fn delete_game(pool: &PgPool, game_id: i64) -> AppResult<()> {
@@ -174,13 +243,60 @@ fn normalize_query(query: GameListQuery) -> GameListParams {
         .unwrap_or(DEFAULT_PAGE_SIZE);
     let category_id = query.category_id.filter(|category_id| *category_id > 0);
     let tag_id = query.tag_id.filter(|tag_id| *tag_id > 0);
+    let keyword = query.keyword.and_then(|keyword| {
+        let keyword = keyword.trim().to_string();
+        if keyword.is_empty() {
+            None
+        } else {
+            Some(keyword)
+        }
+    });
 
     GameListParams {
         page,
         page_size,
         category_id,
         tag_id,
+        keyword,
+        approval_status: None,
     }
+}
+
+fn normalize_public_query(query: GameListQuery) -> GameListParams {
+    let mut params = normalize_query(query);
+    params.approval_status = Some(APPROVAL_STATUS_APPROVED.to_string());
+    params
+}
+
+fn normalize_admin_query(query: GameListQuery) -> GameListParams {
+    normalize_query(query)
+}
+
+fn normalize_pending_query(query: GameListQuery) -> GameListParams {
+    let mut params = normalize_query(query);
+    params.approval_status = Some(APPROVAL_STATUS_PENDING.to_string());
+    params
+}
+
+async fn get_admin_game_detail(pool: &PgPool, id: i64) -> AppResult<GameResponse> {
+    let game = game_repository::find_game_by_id(pool, id)
+        .await
+        .map_err(|_| AppError::internal())?
+        .ok_or_else(AppError::game_not_found)?;
+    let tags = game_repository::list_tags_for_games(pool, &[id])
+        .await
+        .map_err(|_| AppError::internal())?
+        .into_iter()
+        .map(|(_, tag)| TagResponse::from(tag))
+        .collect();
+    let screenshots = game_repository::list_screenshots_for_game(pool, id)
+        .await
+        .map_err(|_| AppError::internal())?
+        .into_iter()
+        .map(ScreenshotResponse::from)
+        .collect();
+
+    Ok(GameResponse::from_parts(game, tags, screenshots))
 }
 
 fn validate_game_input(request: CreateGameRequest) -> AppResult<ValidatedGameInput> {
@@ -288,15 +404,15 @@ async fn ensure_category_exists(pool: &PgPool, category_id: i64) -> AppResult<()
     Ok(())
 }
 
-async fn ensure_tags_exist(pool: &PgPool, tag_ids: &[i64]) -> AppResult<()> {
-    let existing_count = game_repository::count_existing_tags(pool, tag_ids)
+async fn ensure_tags_exist(pool: &PgPool, tag_ids: &[i64]) -> AppResult<Vec<String>> {
+    let tags = game_repository::list_tags_by_ids(pool, tag_ids)
         .await
         .map_err(|_| AppError::internal())?;
-    if existing_count != tag_ids.len() as i64 {
+    if tags.len() != tag_ids.len() {
         return Err(AppError::tag_not_found());
     }
 
-    Ok(())
+    Ok(tags.into_iter().map(|tag| tag.name).collect())
 }
 
 fn tags_by_game_id(rows: Vec<(i64, TagRow)>) -> HashMap<i64, Vec<TagResponse>> {
@@ -334,6 +450,7 @@ mod tests {
             page_size: Some(-1),
             category_id: Some(-3),
             tag_id: Some(0),
+            keyword: None,
         });
 
         assert_eq!(params.page, DEFAULT_PAGE);
@@ -349,12 +466,84 @@ mod tests {
             page_size: Some(999),
             category_id: Some(1),
             tag_id: Some(2),
+            keyword: None,
         });
 
         assert_eq!(params.page, 2);
         assert_eq!(params.page_size, MAX_PAGE_SIZE);
         assert_eq!(params.category_id, Some(1));
         assert_eq!(params.tag_id, Some(2));
+    }
+
+    #[test]
+    fn normalize_query_trims_keyword_for_search() {
+        let params = normalize_query(GameListQuery {
+            page: Some(1),
+            page_size: Some(12),
+            category_id: None,
+            tag_id: None,
+            keyword: Some("  雨后  ".to_string()),
+        });
+
+        assert_eq!(params.keyword.as_deref(), Some("雨后"));
+    }
+
+    #[test]
+    fn normalize_query_ignores_blank_keyword() {
+        let params = normalize_query(GameListQuery {
+            page: Some(1),
+            page_size: Some(12),
+            category_id: None,
+            tag_id: None,
+            keyword: Some("   ".to_string()),
+        });
+
+        assert_eq!(params.keyword, None);
+    }
+
+    #[test]
+    fn public_game_query_filters_to_approved_games() {
+        let params = normalize_public_query(GameListQuery {
+            page: Some(1),
+            page_size: Some(12),
+            category_id: None,
+            tag_id: None,
+            keyword: None,
+        });
+
+        assert_eq!(
+            params.approval_status.as_deref(),
+            Some(APPROVAL_STATUS_APPROVED)
+        );
+    }
+
+    #[test]
+    fn admin_game_query_keeps_status_unfiltered() {
+        let params = normalize_admin_query(GameListQuery {
+            page: Some(1),
+            page_size: Some(12),
+            category_id: None,
+            tag_id: None,
+            keyword: None,
+        });
+
+        assert_eq!(params.approval_status, None);
+    }
+
+    #[test]
+    fn pending_game_query_filters_to_pending_games() {
+        let params = normalize_pending_query(GameListQuery {
+            page: Some(1),
+            page_size: Some(12),
+            category_id: None,
+            tag_id: None,
+            keyword: None,
+        });
+
+        assert_eq!(
+            params.approval_status.as_deref(),
+            Some(APPROVAL_STATUS_PENDING)
+        );
     }
 
     #[test]
