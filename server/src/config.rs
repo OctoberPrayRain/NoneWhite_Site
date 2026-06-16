@@ -1,4 +1,4 @@
-use std::{env, path::PathBuf};
+use std::{env, fmt, path::PathBuf};
 
 #[derive(Clone, Debug)]
 pub struct ServerConfig {
@@ -25,12 +25,27 @@ pub struct UploadConfig {
     pub max_image_size_bytes: usize,
 }
 
+#[derive(Clone)]
+pub struct OpenListConfig {
+    pub token: String,
+}
+
+impl fmt::Debug for OpenListConfig {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("OpenListConfig")
+            .field("token", &"<redacted>")
+            .finish()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct AppConfig {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub auth: AuthConfig,
     pub upload: UploadConfig,
+    pub openlist: OpenListConfig,
 }
 
 impl ServerConfig {
@@ -76,6 +91,9 @@ impl AppConfig {
                     .and_then(|value| value.parse::<usize>().ok())
                     .unwrap_or(5 * 1024 * 1024),
             },
+            openlist: OpenListConfig {
+                token: env::var("OPENLIST_TOKEN").unwrap_or_default(),
+            },
         }
     }
 }
@@ -104,4 +122,20 @@ fn normalize_public_base_url(value: String) -> String {
 
 pub fn server_address() -> String {
     AppConfig::from_env().server.address()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn openlist_config_debug_redacts_token() {
+        let config = OpenListConfig {
+            token: "secret-openlist-token".to_string(),
+        };
+        let output = format!("{config:?}");
+
+        assert!(output.contains("<redacted>"));
+        assert!(!output.contains("secret-openlist-token"));
+    }
 }
