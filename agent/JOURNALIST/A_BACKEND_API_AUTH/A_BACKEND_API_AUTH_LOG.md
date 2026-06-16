@@ -129,7 +129,7 @@ Environment:
 
 Verification:
 - Confirmed `users` table columns: `id`, `username`, `email`, `password_hash`, `avatar_url`, `role`, `created_at`, `updated_at`.
-- Started Windows backend with `DATABASE_URL=postgres://nonewhite_user:nonewhite_password@localhost:5432/nonewhite_site`, `JWT_SECRET=local-integration-secret`, and `PORT=3021`.
+- Started Windows backend with `DATABASE_URL=<redacted>`, `JWT_SECRET=<redacted>`, and `PORT=3021`.
 - `GET /api/test`: HTTP 200.
 - Register happy path: `POST /api/auth/register` returned `code=0`.
 - Login happy path: `POST /api/auth/login` returned `code=0`, `tokenType=Bearer`.
@@ -255,3 +255,7 @@ Conflict Notes:
 - Touched shared backend route module `server/src/routes/mod.rs`, shared error module `server/src/error.rs`, shared config/env examples, README, and collaboration contract in a single sequenced backend/docs pass.
 Next Role Needed:
 - Role C should run live DB/API QA in an environment with PostgreSQL/Docker access and append evidence without recording real JWTs, production download URLs, or secrets.
+
+## Security Redaction - Role A Log - 2026-06-15
+
+A previous QA evidence line was redacted to replace raw `DATABASE_URL` and `JWT_SECRET` values with placeholders. The original values were intentionally not retained in this log.
