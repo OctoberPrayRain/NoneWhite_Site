@@ -1,0 +1,6 @@
+{"file":".trellis/spec/frontend/index.md","reason":"Frontend conventions and required quality gates for Vue/Vite changes."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Vue SFC component, styling, and accessibility patterns."}
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Frontend build, preview, and forbidden dependency rules."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Route metadata, auth state, and server-state boundaries."}
+{"file":".trellis/spec/frontend/type-safety.md","reason":"Plain JavaScript API contract discipline."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Cross-layer API/frontend/DB contract checks for search and admin flows."}
