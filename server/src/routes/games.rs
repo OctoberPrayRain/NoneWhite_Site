@@ -1,13 +1,18 @@
 use axum::{
     extract::{Path, Query, State},
+    http::{HeaderMap, StatusCode},
     response::Json,
-    routing::get,
+    routing::{get, post},
     Router,
 };
 
 use crate::{
-    dto::games::{CategoryResponse, GameListQuery, GameListResponse, GameResponse, TagResponse},
+    dto::games::{
+        CategoryResponse, CreateGameRequest, GameListQuery, GameListResponse, GameResponse,
+        TagResponse,
+    },
     error::AppResult,
+    middleware::auth,
     response::ApiResponse,
     services::game_service,
     state::AppState,
@@ -16,6 +21,7 @@ use crate::{
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/games", get(list_games))
+        .route("/api/games/submissions", post(submit_game))
         .route("/api/games/{id}", get(get_game_detail))
         .route("/api/categories", get(list_categories))
         .route("/api/tags", get(list_tags))
@@ -28,6 +34,20 @@ async fn list_games(
     let response = game_service::list_games(&state.db_pool, query).await?;
 
     Ok(Json(ApiResponse::success(response, "Games loaded")))
+}
+
+async fn submit_game(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(request): Json<CreateGameRequest>,
+) -> AppResult<(StatusCode, Json<ApiResponse<GameResponse>>)> {
+    let user_id = auth::authenticated_user_id(&headers, &state.config.auth)?;
+    let response = game_service::submit_game(&state.db_pool, user_id, request).await?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(ApiResponse::success(response, "Game submitted for review")),
+    ))
 }
 
 async fn get_game_detail(
