@@ -43,10 +43,14 @@ pub async fn count_games(pool: &PgPool, params: &GameListParams) -> Result<i64, 
               WHERE gt.game_id = g.id AND gt.tag_id = $2
             )
           )
+          AND ($3::TEXT IS NULL OR LOWER(g.search_text) LIKE '%' || LOWER($3) || '%')
+          AND ($4::TEXT IS NULL OR g.approval_status = $4)
         "#,
     )
     .bind(params.category_id)
     .bind(params.tag_id)
+    .bind(&params.keyword)
+    .bind(&params.approval_status)
     .fetch_one(pool)
     .await?;
 
@@ -73,7 +77,11 @@ pub async fn list_games(
           c.name AS category_name,
           c.slug AS category_slug,
           g.likes_count,
-          g.favorites_count
+          g.favorites_count,
+          g.approval_status,
+          g.submitted_by_user_id,
+          g.reviewed_by_user_id,
+          g.reviewed_at
         FROM games g
         INNER JOIN categories c ON c.id = g.category_id
         WHERE ($1::BIGINT IS NULL OR g.category_id = $1)
@@ -85,12 +93,16 @@ pub async fn list_games(
               WHERE gt.game_id = g.id AND gt.tag_id = $2
             )
           )
+          AND ($3::TEXT IS NULL OR LOWER(g.search_text) LIKE '%' || LOWER($3) || '%')
+          AND ($4::TEXT IS NULL OR g.approval_status = $4)
         ORDER BY g.id ASC
-        LIMIT $3 OFFSET $4
+        LIMIT $5 OFFSET $6
         "#,
     )
     .bind(params.category_id)
     .bind(params.tag_id)
+    .bind(&params.keyword)
+    .bind(&params.approval_status)
     .bind(params.page_size)
     .bind(offset)
     .fetch_all(pool)
@@ -112,10 +124,47 @@ pub async fn find_game_by_id(pool: &PgPool, id: i64) -> Result<Option<GameRow>, 
           c.name AS category_name,
           c.slug AS category_slug,
           g.likes_count,
-          g.favorites_count
+          g.favorites_count,
+          g.approval_status,
+          g.submitted_by_user_id,
+          g.reviewed_by_user_id,
+          g.reviewed_at
         FROM games g
         INNER JOIN categories c ON c.id = g.category_id
         WHERE g.id = $1
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await
+}
+
+pub async fn find_approved_game_by_id(
+    pool: &PgPool,
+    id: i64,
+) -> Result<Option<GameRow>, sqlx::Error> {
+    sqlx::query_as::<_, GameRow>(
+        r#"
+        SELECT
+          g.id,
+          g.title,
+          g.developer,
+          g.publisher,
+          g.release_date,
+          g.description,
+          g.cover_url,
+          g.category_id,
+          c.name AS category_name,
+          c.slug AS category_slug,
+          g.likes_count,
+          g.favorites_count,
+          g.approval_status,
+          g.submitted_by_user_id,
+          g.reviewed_by_user_id,
+          g.reviewed_at
+        FROM games g
+        INNER JOIN categories c ON c.id = g.category_id
+        WHERE g.id = $1 AND g.approval_status = 'approved'
         "#,
     )
     .bind(id)
@@ -133,29 +182,30 @@ pub async fn category_exists(pool: &PgPool, id: i64) -> Result<bool, sqlx::Error
     Ok(record.0)
 }
 
-pub async fn count_existing_tags(pool: &PgPool, tag_ids: &[i64]) -> Result<i64, sqlx::Error> {
+pub async fn list_tags_by_ids(pool: &PgPool, tag_ids: &[i64]) -> Result<Vec<TagRow>, sqlx::Error> {
     if tag_ids.is_empty() {
-        return Ok(0);
+        return Ok(Vec::new());
     }
 
-    let record = sqlx::query_as::<_, (i64,)>(
+    sqlx::query_as::<_, TagRow>(
         r#"
-        SELECT COUNT(*)
+        SELECT id, name, slug
         FROM tags
         WHERE id = ANY($1)
+        ORDER BY id ASC
         "#,
     )
     .bind(tag_ids)
-    .fetch_one(pool)
-    .await?;
-
-    Ok(record.0)
+    .fetch_all(pool)
+    .await
 }
 
 pub async fn insert_game(
     tx: &mut Transaction<'_, Postgres>,
     input: &ValidatedGameInput,
     search_text: &str,
+    approval_status: &str,
+    submitted_by_user_id: Option<i64>,
 ) -> Result<i64, sqlx::Error> {
     let record = sqlx::query_as::<_, (i64,)>(
         r#"
@@ -167,9 +217,11 @@ pub async fn insert_game(
           description,
           cover_url,
           category_id,
-          search_text
+          search_text,
+          approval_status,
+          submitted_by_user_id
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING id
         "#,
     )
@@ -181,10 +233,36 @@ pub async fn insert_game(
     .bind(&input.cover_url)
     .bind(input.category_id)
     .bind(search_text)
+    .bind(approval_status)
+    .bind(submitted_by_user_id)
     .fetch_one(&mut **tx)
     .await?;
 
     Ok(record.0)
+}
+
+pub async fn approve_game(
+    pool: &PgPool,
+    game_id: i64,
+    reviewer_user_id: i64,
+) -> Result<Option<i64>, sqlx::Error> {
+    let record = sqlx::query_as::<_, (i64,)>(
+        r#"
+        UPDATE games
+        SET approval_status = 'approved',
+            reviewed_by_user_id = $2,
+            reviewed_at = NOW(),
+            updated_at = NOW()
+        WHERE id = $1 AND approval_status = 'pending'
+        RETURNING id
+        "#,
+    )
+    .bind(game_id)
+    .bind(reviewer_user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(record.map(|row| row.0))
 }
 
 pub async fn update_game(
@@ -295,8 +373,36 @@ pub(crate) fn build_search_text(
     developer: &str,
     publisher: &str,
     description: &str,
+    tag_names: &[String],
 ) -> String {
-    format!("{title} {developer} {publisher} {description}").to_lowercase()
+    let mut search_text = format!("{title} {developer} {publisher} {description}");
+    for tag_name in tag_names {
+        search_text.push(' ');
+        search_text.push_str(tag_name);
+    }
+
+    search_text.to_lowercase()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_search_text_includes_tag_names() {
+        let search_text = build_search_text(
+            "雨后第七封信",
+            "NoneWhite Studio",
+            "NoneWhite",
+            "毕业前夜",
+            &["校园".to_string(), "治愈".to_string()],
+        );
+
+        assert!(search_text.contains("雨后第七封信"));
+        assert!(search_text.contains("nonewhite studio"));
+        assert!(search_text.contains("校园"));
+        assert!(search_text.contains("治愈"));
+    }
 }
 
 pub async fn list_tags_for_games(
