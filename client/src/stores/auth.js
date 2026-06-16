@@ -84,9 +84,17 @@ export async function registerWithCredentials(payload) {
   authErrorMessage.value = ''
 
   try {
-    const user = await register(payload)
+    await register(payload)
+    const data = await login({
+      email: payload.email,
+      password: payload.password,
+    })
+    saveToken(data.token)
+    tokenType.value = data.tokenType || 'Bearer'
+    expiresIn.value = data.expiresIn || null
+    currentUser.value = data.user
     authStatus.value = 'success'
-    return user
+    return data
   } catch (error) {
     authErrorMessage.value = toErrorMessage(error)
     authStatus.value = 'error'

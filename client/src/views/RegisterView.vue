@@ -1,9 +1,11 @@
 <script setup>
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '../stores/auth'
 
+const route = useRoute()
+const router = useRouter()
 const { registerWithCredentials } = useAuthStore()
 
 const username = ref('')
@@ -53,10 +55,11 @@ async function handleSubmit() {
       email: email.value.trim(),
       password: password.value,
     })
-    successMessage.value = '注册成功，请使用邮箱和密码登录。'
+    successMessage.value = '注册成功，正在前往个人中心...'
     status.value = 'success'
     password.value = ''
     confirmPassword.value = ''
+    await router.push(typeof route.query.redirect === 'string' ? route.query.redirect : '/profile')
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '注册失败，请稍后重试'
     status.value = 'error'
@@ -68,10 +71,9 @@ async function handleSubmit() {
   <section class="auth-page">
     <div class="auth-copy">
       <div class="eyebrow">Create Account</div>
-      <h1>创建你的分享站账号</h1>
+      <h1>加入玩家社区</h1>
       <p>
-        注册页只提交契约字段 <code>username</code>、<code>email</code> 和
-        <code>password</code>。确认密码只在前端用于体验校验，不会发送到后端。
+        加入我们的独立游戏分享交流社区，建立你的游戏库，与众多玩家共同探索游戏世界。
       </p>
     </div>
 
@@ -83,12 +85,12 @@ async function handleSubmit() {
 
       <label class="form-field">
         <span>用户名</span>
-        <input v-model="username" type="text" autocomplete="username" placeholder="alice" />
+        <input v-model="username" type="text" autocomplete="username" placeholder="你的昵称" />
       </label>
 
       <label class="form-field">
         <span>邮箱</span>
-        <input v-model="email" type="email" autocomplete="email" placeholder="alice@example.com" />
+        <input v-model="email" type="email" autocomplete="email" placeholder="you@example.com" />
       </label>
 
       <label class="form-field">
@@ -102,9 +104,7 @@ async function handleSubmit() {
       </label>
 
       <p v-if="status === 'error'" class="notice-box is-error">{{ errorMessage }}</p>
-      <p v-if="status === 'success'" class="notice-box is-success">
-        {{ successMessage }} <RouterLink to="/login">前往登录</RouterLink>
-      </p>
+      <p v-if="status === 'success'" class="notice-box is-success">{{ successMessage }}</p>
 
       <button class="primary-button form-button" type="submit" :disabled="status === 'loading'">
         {{ status === 'loading' ? '注册中...' : '注册' }}
