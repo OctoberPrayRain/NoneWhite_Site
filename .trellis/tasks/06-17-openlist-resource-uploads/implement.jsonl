@@ -1,0 +1,3 @@
+{"file":".trellis/spec/frontend/index.md","reason":"Frontend Vue/Vite conventions, API wrapper rules, and required build/lint checks for marker-hiding changes."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Feature spans backend upload API, stored marker contract, and frontend display behavior."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"New OpenList/config helpers should reuse existing validation and marker conventions rather than duplicating ad hoc logic."}
