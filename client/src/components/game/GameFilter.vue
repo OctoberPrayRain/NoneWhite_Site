@@ -33,7 +33,7 @@ function updateFilter(key, event) {
 </script>
 
 <template>
-  <section class="game-filter" aria-label="游戏筛选">
+  <section class="game-filter" aria-label="文件筛选">
     <label class="filter-field">
       <span>分类</span>
       <select :value="categoryId" :disabled="disabled" @change="updateFilter('categoryId', $event)">

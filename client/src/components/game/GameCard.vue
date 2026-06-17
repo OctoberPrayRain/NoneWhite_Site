@@ -46,16 +46,16 @@ const hasCover = computed(() => props.game.coverUrl && !imageFailed.value)
         <h2>{{ game.title }}</h2>
       </div>
       <p>{{ game.description }}</p>
-      <div class="tag-list" aria-label="游戏标签">
+      <div class="tag-list" aria-label="文件标签">
         <span v-for="tag in game.tags" :key="tag.id">{{ tag.name }}</span>
       </div>
       <dl class="game-card-meta">
         <div>
-          <dt>开发商</dt>
+          <dt>提供方</dt>
           <dd>{{ game.developer }}</dd>
         </div>
         <div>
-          <dt>发行日期</dt>
+          <dt>发布日期</dt>
           <dd>{{ game.releaseDate || '待确认' }}</dd>
         </div>
       </dl>
