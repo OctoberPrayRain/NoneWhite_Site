@@ -165,7 +165,7 @@ async function loadPendingGames() {
     const result = await adminGetPendingGames({ pageSize: 50 }, authToken.value)
     pendingGames.value = result.list
   } catch (error) {
-    errorMessage.value = toErrorMessage(error, '加载待审核游戏失败')
+    errorMessage.value = toErrorMessage(error, '加载待审核文件失败')
   } finally {
     pendingLoading.value = false
   }
@@ -174,10 +174,10 @@ async function loadPendingGames() {
 async function handleApproveGame(gameId) {
   try {
     await adminApproveGame(gameId, authToken.value)
-    successMessage.value = '游戏审核通过'
+    successMessage.value = '文件审核通过'
     await Promise.all([loadPendingGames(), loadGames(gamePage.value)])
   } catch (error) {
-    errorMessage.value = toErrorMessage(error, '审核游戏失败')
+    errorMessage.value = toErrorMessage(error, '审核文件失败')
   }
 }
 
@@ -225,7 +225,7 @@ async function loadGames(nextPage = gamePage.value) {
       gamePage.value = nextPage
       selectedGameId.value = ''
       clearResourceState()
-      errorMessage.value = toErrorMessage(error, '管理员游戏列表加载失败')
+      errorMessage.value = toErrorMessage(error, '管理员文件列表加载失败')
     }
   } finally {
     if (currentRequestId === gameRequestId) {
@@ -333,7 +333,7 @@ async function handleSaveGame() {
       return
     }
 
-    successMessage.value = wasEditing ? '游戏已更新。' : '游戏已创建。'
+    successMessage.value = wasEditing ? '文件已更新。' : '文件已创建。'
     selectedGameId.value = String(savedGame.id)
     resetGameForm()
     await loadGames(wasEditing ? gamePage.value : 1)
@@ -342,7 +342,7 @@ async function handleSaveGame() {
     }
   } catch (error) {
     if (isCurrentGameMutation(currentRequestId, targetEditingGameId, targetSelectedGameId, targetForm)) {
-      errorMessage.value = toErrorMessage(error, '游戏保存失败')
+      errorMessage.value = toErrorMessage(error, '文件保存失败')
     }
   } finally {
     if (currentRequestId === gameMutationRequestId) {
@@ -361,14 +361,14 @@ async function handleDeleteGame(game) {
 
   try {
     await adminDeleteGame(game.id, authToken.value)
-    successMessage.value = '游戏已删除。'
+    successMessage.value = '文件已删除。'
     if (String(selectedGameId.value) === String(game.id)) {
       selectedGameId.value = ''
       clearResourceState()
     }
     await loadGames(games.value.length <= 1 && gamePage.value > 1 ? gamePage.value - 1 : gamePage.value)
   } catch (error) {
-    errorMessage.value = toErrorMessage(error, '游戏删除失败')
+    errorMessage.value = toErrorMessage(error, '文件删除失败')
   }
 }
 
@@ -425,7 +425,7 @@ function editDownloadLink(link) {
 
 async function handleSaveDownloadLink() {
   if (!selectedGameId.value) {
-    errorMessage.value = '请先选择游戏。'
+    errorMessage.value = '请先选择文件。'
     return
   }
 
@@ -528,7 +528,7 @@ onMounted(bootstrap)
   <section class="page-heading admin-heading">
     <div class="eyebrow">Admin Resources</div>
     <h1>管理后台</h1>
-    <p>管理游戏条目、图片资源、下载链接和单个游戏下的评论内容。</p>
+    <p>管理文件条目、图片资源、下载链接和单个文件下的评论内容。</p>
   </section>
 
   <section class="admin-page">
@@ -547,8 +547,8 @@ onMounted(bootstrap)
       <section class="admin-grid">
         <article class="admin-panel admin-panel--form">
           <div class="section-heading">
-            <h2>{{ editingGameId ? '编辑游戏' : '创建游戏' }}</h2>
-            <span>游戏条目维护</span>
+            <h2>{{ editingGameId ? '编辑文件' : '创建文件' }}</h2>
+            <span>文件条目维护</span>
           </div>
 
           <form class="admin-form" @submit.prevent="handleSaveGame">
@@ -557,15 +557,15 @@ onMounted(bootstrap)
               <input v-model="gameForm.title" required :disabled="savingGame || uploading" />
             </label>
             <label class="form-field">
-              <span>开发商</span>
+              <span>提供方</span>
               <input v-model="gameForm.developer" required :disabled="savingGame || uploading" />
             </label>
             <label class="form-field">
-              <span>发行商</span>
+              <span>发布方</span>
               <input v-model="gameForm.publisher" required :disabled="savingGame || uploading" />
             </label>
             <label class="form-field">
-              <span>发行日期</span>
+              <span>发布日期</span>
               <input v-model="gameForm.releaseDate" type="date" :disabled="savingGame || uploading" />
             </label>
             <label class="form-field admin-form__wide">
@@ -597,16 +597,16 @@ onMounted(bootstrap)
               </label>
             </fieldset>
             <label class="form-field admin-form__wide">
-              <span>截图 URL（一行一个）</span>
+              <span>预览图 URL（一行一个）</span>
               <textarea v-model="gameForm.screenshotsText" rows="4" placeholder="/uploads/images/shot.png" :disabled="savingGame || uploading"></textarea>
             </label>
             <div class="admin-form__wide admin-actions">
               <label class="secondary-button file-button">
-                上传截图
+                上传预览图
                 <input type="file" accept="image/png,image/jpeg,image/webp" :disabled="savingGame || uploading" @change="handleUploadImage($event, 'screenshot')" />
               </label>
               <button class="primary-button" type="submit" :disabled="savingGame || uploading">
-                {{ savingGame ? '保存中...' : editingGameId ? '保存修改' : '创建游戏' }}
+                {{ savingGame ? '保存中...' : editingGameId ? '保存修改' : '创建文件' }}
               </button>
               <button class="ghost-button" type="button" :disabled="savingGame || uploading" @click="resetGameForm">清空</button>
             </div>
@@ -615,11 +615,11 @@ onMounted(bootstrap)
 
         <article class="admin-panel">
           <div class="section-heading">
-            <h2>游戏列表</h2>
+            <h2>文件列表</h2>
             <span>{{ gameTotal }} 条</span>
           </div>
 
-          <EmptyState v-if="!hasGames" title="暂无游戏" description="创建游戏后可继续管理下载链接和评论。" />
+          <EmptyState v-if="!hasGames" title="暂无文件" description="创建文件后可继续管理下载链接和评论。" />
           <div v-else class="admin-game-list">
             <div
               v-for="game in games"
@@ -652,11 +652,11 @@ onMounted(bootstrap)
         <article class="admin-panel admin-panel--pending admin-form__wide">
           <div class="section-heading">
             <h2>待审核</h2>
-            <span>{{ pendingGames.length }} 款待处理</span>
+            <span>{{ pendingGames.length }} 个待处理</span>
           </div>
 
-          <BaseLoading v-if="pendingLoading" text="正在加载待审核游戏..." />
-          <EmptyState v-else-if="pendingGames.length === 0" title="暂无待审核" description="当前没有等待审核的游戏提交。" />
+          <BaseLoading v-if="pendingLoading" text="正在加载待审核文件..." />
+          <EmptyState v-else-if="pendingGames.length === 0" title="暂无待审核" description="当前没有等待审核的文件提交。" />
           <div v-else class="admin-game-list">
             <div
               v-for="game in pendingGames"
@@ -679,7 +679,7 @@ onMounted(bootstrap)
         <article class="admin-panel">
           <div class="section-heading">
             <h2>下载链接</h2>
-            <span>{{ selectedGame?.title || '未选择游戏' }}</span>
+            <span>{{ selectedGame?.title || '未选择文件' }}</span>
           </div>
 
           <form class="download-form" @submit.prevent="handleSaveDownloadLink">
@@ -713,7 +713,7 @@ onMounted(bootstrap)
 
           <div class="admin-resource-list">
             <p v-if="resourceLoading">正在加载资源...</p>
-            <p v-else-if="downloadLinks.length === 0" class="muted-text">当前游戏暂无下载链接。</p>
+            <p v-else-if="downloadLinks.length === 0" class="muted-text">当前文件暂无下载链接。</p>
             <div v-for="link in downloadLinks" v-else :key="link.id" class="admin-resource-card">
               <strong>{{ link.platform }}</strong>
               <a :href="link.url" target="_blank" rel="noreferrer">{{ link.url }}</a>
@@ -729,12 +729,12 @@ onMounted(bootstrap)
         <article class="admin-panel">
           <div class="section-heading">
             <h2>评论管理</h2>
-            <span>按游戏查看</span>
+            <span>按文件查看</span>
           </div>
 
           <div class="admin-resource-list">
             <p v-if="resourceLoading">正在加载评论...</p>
-            <p v-else-if="comments.length === 0" class="muted-text">当前游戏暂无评论。</p>
+            <p v-else-if="comments.length === 0" class="muted-text">当前文件暂无评论。</p>
             <div v-for="comment in comments" v-else :key="comment.id" class="admin-resource-card comment-moderation-card">
               <strong>{{ comment.username }}</strong>
               <p>{{ comment.content }}</p>
