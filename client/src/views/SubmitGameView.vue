@@ -75,10 +75,10 @@ async function handleSubmit() {
   try {
     const payload = buildPayload()
     await submitGameSubmission(payload, authToken.value)
-    successMessage.value = '游戏提交成功，等待管理员审核。'
+    successMessage.value = '文件提交成功，等待管理员审核。'
     resetForm()
   } catch (error) {
-    errorMessage.value = toErrorMessage(error, '游戏提交失败，请稍后重试。')
+    errorMessage.value = toErrorMessage(error, '文件提交失败，请稍后重试。')
   } finally {
     submitting.value = false
   }
@@ -102,9 +102,9 @@ onMounted(bootstrap)
 
 <template>
   <section class="page-heading">
-    <div class="eyebrow">Submit Game</div>
-    <h1>提交游戏</h1>
-    <p>在此提交新的游戏。提交后将进入待审核状态，管理员审核通过后将展示在游戏列表中。</p>
+    <div class="eyebrow">Submit File</div>
+    <h1>提交文件</h1>
+    <p>在此提交新的文件。提交后将进入待审核状态，管理员审核通过后将展示在文件列表中。</p>
   </section>
 
   <section class="admin-page">
@@ -115,7 +115,7 @@ onMounted(bootstrap)
 
       <article class="admin-panel admin-panel--form">
         <div class="section-heading">
-          <h2>填写游戏信息</h2>
+          <h2>填写文件信息</h2>
         </div>
 
         <form class="admin-form" @submit.prevent="handleSubmit">
@@ -124,15 +124,15 @@ onMounted(bootstrap)
             <input v-model="form.title" required :disabled="submitting" />
           </label>
           <label class="form-field">
-            <span>开发商</span>
+            <span>提供方</span>
             <input v-model="form.developer" required :disabled="submitting" />
           </label>
           <label class="form-field">
-            <span>发行商</span>
+            <span>发布方</span>
             <input v-model="form.publisher" required :disabled="submitting" />
           </label>
           <label class="form-field">
-            <span>发行日期</span>
+            <span>发布日期</span>
             <input v-model="form.releaseDate" type="date" :disabled="submitting" />
           </label>
           <label class="form-field admin-form__wide">
@@ -160,7 +160,7 @@ onMounted(bootstrap)
             </label>
           </fieldset>
           <label class="form-field admin-form__wide">
-            <span>截图 URL（一行一个）</span>
+            <span>预览图 URL（一行一个）</span>
             <textarea v-model="form.screenshotsText" rows="4" placeholder="https://..." :disabled="submitting"></textarea>
           </label>
           <div class="admin-form__wide admin-actions">
