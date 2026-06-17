@@ -26,7 +26,9 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-nonewhite_user}:${POSTGRES_PASSWORD:-nonewhite_password}@postgres:5432/${POSTGRES_DB:-nonewhite_site}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-local-development}
       JWT_EXPIRES_IN_SECONDS: ${JWT_EXPIRES_IN_SECONDS:-604800}
+      OPENLIST_BASE_URL: ${OPENLIST_BASE_URL:-}
       OPENLIST_TOKEN: ${OPENLIST_TOKEN:-}
+      OPENLIST_RESOURCE_UPLOAD_DIR: ${OPENLIST_RESOURCE_UPLOAD_DIR:-}
       UPLOAD_DIR: /app/uploads
       UPLOAD_PUBLIC_BASE_URL: /uploads
       MAX_AVATAR_SIZE_BYTES: ${MAX_AVATAR_SIZE_BYTES:-2097152}
