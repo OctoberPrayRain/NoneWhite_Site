@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 
 import { getCategories, getTags, submitGameSubmission, uploadUserImage, uploadUserResource, formatFileSize } from '../api/games'
 import BaseLoading from '../components/common/BaseLoading.vue'
@@ -30,6 +30,10 @@ const emptyForm = () => ({
 })
 
 const form = ref(emptyForm())
+
+const screenshotCount = computed(() => {
+  return form.value.screenshotsText.split('\n').map(url => url.trim()).filter(Boolean).length
+})
 
 function resetForm() {
   form.value = emptyForm()
@@ -207,8 +211,14 @@ onMounted(bootstrap)
             </select>
           </label>
           <div class="form-field admin-upload-field">
-            <span>封面 URL</span>
-            <input v-model="form.coverUrl" placeholder="https://..." :disabled="submitting || uploading" />
+            <span>封面图</span>
+            <div class="admin-upload-status">
+              <div class="image-status-badge" :class="{ 'is-uploaded': !!form.coverUrl }">
+                <span class="status-dot"></span>
+                {{ form.coverUrl ? '已设置封面' : '未上传' }}
+              </div>
+              <button v-if="form.coverUrl" type="button" class="ghost-button clear-btn" @click="form.coverUrl = ''" :disabled="submitting || uploading">移除</button>
+            </div>
             <label class="secondary-button file-button">
               上传封面
               <input type="file" accept="image/png,image/jpeg,image/webp" :disabled="submitting || uploading" @change="handleUploadImage($event, 'cover')" />
@@ -222,8 +232,14 @@ onMounted(bootstrap)
             </label>
           </fieldset>
           <div class="form-field admin-form__wide admin-upload-field">
-            <span>预览图 URL（一行一个）</span>
-            <textarea v-model="form.screenshotsText" rows="4" placeholder="https://..." :disabled="submitting || uploading"></textarea>
+            <span>预览图</span>
+            <div class="admin-upload-status">
+              <div class="image-status-badge" :class="{ 'is-uploaded': screenshotCount > 0 }">
+                <span class="status-dot"></span>
+                {{ screenshotCount > 0 ? `已上传 ${screenshotCount} 张预览图` : '未上传' }}
+              </div>
+              <button v-if="screenshotCount > 0" type="button" class="ghost-button clear-btn" @click="form.screenshotsText = ''" :disabled="submitting || uploading">清空全部</button>
+            </div>
             <div class="admin-actions">
               <label class="secondary-button file-button">
                 上传预览图

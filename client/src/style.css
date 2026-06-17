@@ -1884,3 +1884,48 @@ button:disabled:hover {
     transition: none;
   }
 }
+
+/* Upload Status UI */
+.admin-upload-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.image-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.image-status-badge.is-uploaded {
+  color: var(--text);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--muted);
+  opacity: 0.5;
+  box-shadow: 0 0 0 transparent;
+  transition: all 0.3s ease;
+}
+
+.image-status-badge.is-uploaded .status-dot {
+  background-color: var(--accent-cyan);
+  opacity: 1;
+  box-shadow: 0 0 8px var(--accent-cyan);
+}
+
+.clear-btn {
+  padding: 4px 8px;
+  min-height: 0;
+  font-size: 13px;
+}

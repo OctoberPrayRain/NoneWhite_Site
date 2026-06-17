@@ -350,11 +350,39 @@ if (/:href=\"link\.url\"/.test(gameDetailViewSrc)) {
   fail('Download card must keep a functional download target')
 }
 
-if (/\/uploads\/resources/.test(gameDetailViewSrc) || /\{\{\s*link\.url\s*\}\}/.test(gameDetailViewSrc)) {
+if (/\/uploads\/resources/.test(gameDetailViewSrc) || /openlist:/.test(gameDetailViewSrc) || /\{\{\s*link\.url\s*\}\}/.test(gameDetailViewSrc)) {
    err('Game detail exposes raw upload resource marker')
    fail('Game detail exposes raw upload resource marker')
 } else {
    pass('Game detail does not expose raw resource markers')
+}
+
+if (/isLocalResourceMarker/.test(adminViewSrc)) {
+  err('AdminConsoleView still uses local-only resource marker detection')
+  fail('AdminConsoleView must use internal resource marker detection')
+} else {
+  pass('AdminConsoleView no longer uses local-only marker detection')
+}
+
+if (
+  /OPENLIST_RESOURCE_PREFIX\s*=\s*['"`]openlist:/.test(adminViewSrc) &&
+  /function\s+isInternalResourceMarker\s*\(/.test(adminViewSrc) &&
+  /startsWith\(OPENLIST_RESOURCE_PREFIX\)/.test(adminViewSrc)
+) {
+  pass('AdminConsoleView treats OpenList markers as internal resources')
+} else {
+  err('AdminConsoleView does not treat OpenList markers as internal resources')
+  fail('AdminConsoleView must hide OpenList resource markers')
+}
+
+if (
+  /v-if="!isInternalResourceMarker\(downloadForm\.url\)"/.test(adminViewSrc) &&
+  /v-if="!isInternalResourceMarker\(link\.url\)"/.test(adminViewSrc)
+) {
+  pass('AdminConsoleView gates editable/clickable URLs behind internal marker checks')
+} else {
+  err('AdminConsoleView URL fields are not gated by internal marker checks')
+  fail('AdminConsoleView must gate URL display with internal marker checks')
 }
 
 /* ------------------------------------------------------------------ */
@@ -399,6 +427,43 @@ try {
     err('SubmitGameView missing formatFileSize usage')
     fail('SubmitGameView missing formatFileSize usage')
   }
+
+  if (/封面 URL/.test(submitViewSrc) || /预览图 URL/.test(submitViewSrc)) {
+    err('SubmitGameView exposes raw image URL labels')
+    fail('SubmitGameView exposes raw image URL labels')
+  } else {
+    pass('SubmitGameView hides raw image URL labels')
+  }
+
+  if (/v-model="form\.(coverUrl|screenshotsText)"/.test(submitViewSrc)) {
+    err('SubmitGameView exposes cover/screenshots input')
+    fail('SubmitGameView exposes cover/screenshots input')
+  } else {
+    pass('SubmitGameView hides cover/screenshots input bindings')
+  }
+
+  // Check internal semantics
+  if (/coverUrl:\s*''/.test(submitViewSrc) && /coverUrl:\s*form\.value\.coverUrl/.test(submitViewSrc)) {
+    pass('SubmitGameView retains internal coverUrl state and payload mapping')
+  } else {
+    err('SubmitGameView missing internal coverUrl semantic')
+    fail('SubmitGameView missing internal coverUrl semantic')
+  }
+
+  if (/form\.value\.screenshotsText\s*\n?\s*\.split\('\\n'\)/.test(submitViewSrc)) {
+    pass('SubmitGameView retains screenshotsText split payload behavior')
+  } else {
+    err('SubmitGameView missing screenshotsText payload behavior')
+    fail('SubmitGameView missing screenshotsText payload behavior')
+  }
+
+  if (/form\.value\.coverUrl\s*=\s*result\.imageUrl/.test(submitViewSrc) &&
+      /form\.value\.screenshotsText\s*=\s*\[form\.value\.screenshotsText,\s*result\.imageUrl\]/.test(submitViewSrc)) {
+    pass('SubmitGameView upload handler retains assignment semantics')
+  } else {
+    err('SubmitGameView upload handler missing assignment semantics')
+    fail('SubmitGameView upload handler missing assignment semantics')
+  }
 } catch {
   err('Could not read SubmitGameView.vue for upload checks')
   fail('Missing SubmitGameView.vue')
@@ -416,6 +481,43 @@ if (/formatFileSize/.test(adminViewSrc)) {
 } else {
   err('AdminConsoleView missing formatFileSize usage')
   fail('AdminConsoleView missing formatFileSize usage')
+}
+
+if (/封面 URL/.test(adminViewSrc) || /预览图 URL/.test(adminViewSrc)) {
+  err('AdminConsoleView exposes raw image URL labels')
+  fail('AdminConsoleView exposes raw image URL labels')
+} else {
+  pass('AdminConsoleView hides raw image URL labels')
+}
+
+if (/v-model="gameForm\.(coverUrl|screenshotsText)"/.test(adminViewSrc)) {
+  err('AdminConsoleView exposes cover/screenshots input')
+  fail('AdminConsoleView exposes cover/screenshots input')
+} else {
+  pass('AdminConsoleView hides cover/screenshots input bindings')
+}
+
+// Check internal semantics
+if (/coverUrl:\s*''/.test(adminViewSrc) && /coverUrl:\s*gameForm\.value\.coverUrl/.test(adminViewSrc)) {
+  pass('AdminConsoleView retains internal coverUrl state and payload mapping')
+} else {
+  err('AdminConsoleView missing internal coverUrl semantic')
+  fail('AdminConsoleView missing internal coverUrl semantic')
+}
+
+if (/gameForm\.value\.screenshotsText\s*\n?\s*\.split\('\\n'\)/.test(adminViewSrc)) {
+  pass('AdminConsoleView retains screenshotsText split payload behavior')
+} else {
+  err('AdminConsoleView missing screenshotsText payload behavior')
+  fail('AdminConsoleView missing screenshotsText payload behavior')
+}
+
+if (/gameForm\.value\.coverUrl\s*=\s*result\.imageUrl/.test(adminViewSrc) &&
+    /gameForm\.value\.screenshotsText\s*=\s*\[gameForm\.value\.screenshotsText,\s*result\.imageUrl\]/.test(adminViewSrc)) {
+  pass('AdminConsoleView upload handler retains assignment semantics')
+} else {
+  err('AdminConsoleView upload handler missing assignment semantics')
+  fail('AdminConsoleView upload handler missing assignment semantics')
 }
 
 /* ------------------------------------------------------------------ */

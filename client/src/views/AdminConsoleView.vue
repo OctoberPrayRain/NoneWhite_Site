@@ -49,14 +49,19 @@ const isAdmin = computed(() => currentUser.value?.role === 'admin')
 const selectedGame = computed(() => games.value.find((game) => String(game.id) === String(selectedGameId.value)) || null)
 const hasGames = computed(() => games.value.length > 0)
 
-const LOCAL_RESOURCE_PREFIX = '/uploads/resources/'
+const adminScreenshotCount = computed(() => {
+  return gameForm.value.screenshotsText.split('\n').map(url => url.trim()).filter(Boolean).length
+})
 
-function isLocalResourceMarker(url) {
-  return typeof url === 'string' && url.startsWith(LOCAL_RESOURCE_PREFIX)
+const LOCAL_RESOURCE_PREFIX = '/uploads/resources/'
+const OPENLIST_RESOURCE_PREFIX = 'openlist:'
+
+function isInternalResourceMarker(url) {
+  return typeof url === 'string' && (url.startsWith(LOCAL_RESOURCE_PREFIX) || url.startsWith(OPENLIST_RESOURCE_PREFIX))
 }
 
 function displayDownloadUrl(link) {
-  if (!isLocalResourceMarker(link.url)) {
+  if (!isInternalResourceMarker(link.url)) {
     return link.url
   }
   if (selectedGameId.value) {
@@ -66,7 +71,7 @@ function displayDownloadUrl(link) {
 }
 
 const downloadFormUrlDisplay = computed(() => {
-  if (isLocalResourceMarker(downloadForm.value.url)) {
+  if (isInternalResourceMarker(downloadForm.value.url)) {
     return '已上传资源，将通过受控下载接口发布'
   }
   return downloadForm.value.url
@@ -650,8 +655,14 @@ onMounted(bootstrap)
               </select>
             </label>
             <div class="form-field admin-upload-field">
-              <span>封面 URL</span>
-              <input v-model="gameForm.coverUrl" placeholder="/uploads/images/..." :disabled="savingGame || uploading" />
+              <span>封面图</span>
+              <div class="admin-upload-status">
+                <div class="image-status-badge" :class="{ 'is-uploaded': !!gameForm.coverUrl }">
+                  <span class="status-dot"></span>
+                  {{ gameForm.coverUrl ? '已设置封面' : '未上传' }}
+                </div>
+                <button v-if="gameForm.coverUrl" type="button" class="ghost-button clear-btn" @click="gameForm.coverUrl = ''" :disabled="savingGame || uploading">移除</button>
+              </div>
               <label class="secondary-button file-button">
                 上传封面
                 <input type="file" accept="image/png,image/jpeg,image/webp" :disabled="savingGame || uploading" @change="handleUploadImage($event, 'cover')" />
@@ -664,10 +675,16 @@ onMounted(bootstrap)
                 {{ tag.name }}
               </label>
             </fieldset>
-            <label class="form-field admin-form__wide">
-              <span>预览图 URL（一行一个）</span>
-              <textarea v-model="gameForm.screenshotsText" rows="4" placeholder="/uploads/images/shot.png" :disabled="savingGame || uploading"></textarea>
-            </label>
+            <div class="form-field admin-form__wide admin-upload-field">
+              <span>预览图</span>
+              <div class="admin-upload-status">
+                <div class="image-status-badge" :class="{ 'is-uploaded': adminScreenshotCount > 0 }">
+                  <span class="status-dot"></span>
+                  {{ adminScreenshotCount > 0 ? `已上传 ${adminScreenshotCount} 张预览图` : '未上传' }}
+                </div>
+                <button v-if="adminScreenshotCount > 0" type="button" class="ghost-button clear-btn" @click="gameForm.screenshotsText = ''" :disabled="savingGame || uploading">清空全部</button>
+              </div>
+            </div>
             <div class="admin-form__wide admin-actions">
               <label class="secondary-button file-button">
                 上传预览图
@@ -757,7 +774,7 @@ onMounted(bootstrap)
             </label>
             <label class="form-field">
               <span>URL</span>
-              <input v-if="!isLocalResourceMarker(downloadForm.url)" v-model="downloadForm.url" required placeholder="https://example.invalid/share" :disabled="resourceLoading || !selectedGameId" />
+              <input v-if="!isInternalResourceMarker(downloadForm.url)" v-model="downloadForm.url" required placeholder="https://example.invalid/share" :disabled="resourceLoading || !selectedGameId" />
               <input v-else :value="downloadFormUrlDisplay" required disabled class="muted-text" />
             </label>
             <label class="form-field">
@@ -789,7 +806,7 @@ onMounted(bootstrap)
             <p v-else-if="downloadLinks.length === 0" class="muted-text">当前文件暂无下载链接。</p>
             <div v-for="link in downloadLinks" v-else :key="link.id" class="admin-resource-card">
               <strong>{{ link.platform }}</strong>
-              <a v-if="!isLocalResourceMarker(link.url)" :href="link.url" target="_blank" rel="noreferrer">{{ link.url }}</a>
+              <a v-if="!isInternalResourceMarker(link.url)" :href="link.url" target="_blank" rel="noreferrer">{{ link.url }}</a>
               <span v-else class="muted-text">{{ displayDownloadUrl(link) }}</span>
               <span>提取码：{{ link.extractCode || '无' }} · 密码：{{ link.password || '无' }} · {{ link.fileSize || '未标注大小' }}</span>
               <div class="admin-actions">
