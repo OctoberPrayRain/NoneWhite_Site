@@ -144,6 +144,41 @@ export async function uploadImage(file, authToken) {
   return body.data
 }
 
+export async function uploadAdminResource(file, authToken) {
+  const formData = new FormData()
+  formData.append('resource', file)
+
+  const response = await fetch('/api/uploads/resources', {
+    method: 'POST',
+    headers: createAuthHeaders(authToken),
+    body: formData,
+  })
+  const text = await response.text()
+  let body = null
+
+  if (text) {
+    try {
+      body = JSON.parse(text)
+    } catch {
+      throw new ApiError('接口返回格式不是有效 JSON', {
+        status: response.status,
+        data: text,
+      })
+    }
+  }
+
+  const hasEnvelope = body && typeof body === 'object' && 'code' in body
+  if (!response.ok || !hasEnvelope || body.code !== 0) {
+    throw new ApiError(hasEnvelope ? body.message : `请求失败：${response.status}`, {
+      status: response.status,
+      code: hasEnvelope ? body.code : undefined,
+      data: hasEnvelope ? body.data : null,
+    })
+  }
+
+  return body.data
+}
+
 export async function adminGetDownloadLinks(gameId, authToken) {
   const data = await requestJson(`/api/admin/games/${gameId}/download-links`, {
     headers: createAuthHeaders(authToken),
