@@ -8,7 +8,7 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: '游戏截图',
+    default: '文件预览图',
   },
 })
 
@@ -50,17 +50,17 @@ function markFailed(id) {
 <template>
   <section class="screenshot-section">
     <div class="section-heading">
-      <h2>截图预览</h2>
+      <h2>预览图预览</h2>
       <span v-if="orderedScreenshots.length">{{ activeIndex + 1 }} / {{ orderedScreenshots.length }}</span>
     </div>
 
-    <div v-if="!orderedScreenshots.length" class="screenshot-empty">暂无截图</div>
+    <div v-if="!orderedScreenshots.length" class="screenshot-empty">暂无预览图</div>
     <div v-else class="screenshot-carousel">
       <button
         class="carousel-button"
         type="button"
         :disabled="orderedScreenshots.length <= 1"
-        aria-label="上一张截图"
+        aria-label="上一张预览图"
         @click="showPrevious"
       >
         ‹
@@ -70,7 +70,7 @@ function markFailed(id) {
         <img
           v-if="activeScreenshot?.url && !imageFailedMap[activeScreenshot.id]"
           :src="activeScreenshot.url"
-          :alt="`${title} 截图 ${activeIndex + 1}`"
+          :alt="`${title} 预览图 ${activeIndex + 1}`"
           @error="markFailed(activeScreenshot.id)"
         />
         <div v-else class="screenshot-placeholder">
@@ -82,7 +82,7 @@ function markFailed(id) {
         class="carousel-button"
         type="button"
         :disabled="orderedScreenshots.length <= 1"
-        aria-label="下一张截图"
+        aria-label="下一张预览图"
         @click="showNext"
       >
         ›
