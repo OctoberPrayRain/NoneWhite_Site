@@ -1,4 +1,4 @@
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres, Transaction};
 
 use crate::{dto::download_links::DownloadLinkRequest, models::download_link::DownloadLinkRow};
 
@@ -57,6 +57,29 @@ pub async fn create_download_link(
     .bind(&request.file_size)
     .fetch_one(pool)
     .await
+}
+
+pub async fn insert_download_link(
+    tx: &mut Transaction<'_, Postgres>,
+    game_id: i64,
+    request: &DownloadLinkRequest,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        INSERT INTO download_links (game_id, platform, url, extract_code, password, file_size)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        "#,
+    )
+    .bind(game_id)
+    .bind(&request.platform)
+    .bind(&request.url)
+    .bind(&request.extract_code)
+    .bind(&request.password)
+    .bind(&request.file_size)
+    .execute(&mut **tx)
+    .await?;
+
+    Ok(())
 }
 
 pub async fn update_download_link(

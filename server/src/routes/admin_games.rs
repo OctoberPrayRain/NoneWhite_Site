@@ -17,9 +17,13 @@ use crate::{
     error::{AppError, AppResult},
     middleware::auth,
     response::ApiResponse,
-    services::{download_link_service, game_service},
+    services::{
+        download_link_service::{self, PublicDownloadTarget},
+        game_service,
+    },
     state::AppState,
 };
+use tokio::fs;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -158,24 +162,54 @@ async fn download_public_download_link(
     State(state): State<AppState>,
     Path((game_id, id)): Path<(i64, i64)>,
 ) -> AppResult<Response> {
-    let target = download_link_service::openlist_download_accel_target(
+    let target = download_link_service::public_download_target(
         &state.db_pool,
         &state.config.openlist,
         game_id,
         id,
     )
     .await?;
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        HeaderName::from_static("x-accel-redirect"),
-        HeaderValue::from_str(&target.x_accel_redirect).map_err(|_| AppError::internal())?,
-    );
-    headers.insert(
-        header::CONTENT_DISPOSITION,
-        HeaderValue::from_str(&target.content_disposition).map_err(|_| AppError::internal())?,
-    );
 
-    Ok((StatusCode::OK, headers, ()).into_response())
+    match target {
+        PublicDownloadTarget::OpenList(target) => {
+            let mut headers = HeaderMap::new();
+            headers.insert(
+                HeaderName::from_static("x-accel-redirect"),
+                HeaderValue::from_str(&target.x_accel_redirect)
+                    .map_err(|_| AppError::internal())?,
+            );
+            headers.insert(
+                header::CONTENT_DISPOSITION,
+                HeaderValue::from_str(&target.content_disposition)
+                    .map_err(|_| AppError::internal())?,
+            );
+
+            Ok((StatusCode::OK, headers, ()).into_response())
+        }
+        PublicDownloadTarget::LocalResource(target) => {
+            let file_path = state
+                .config
+                .upload
+                .upload_dir
+                .join("resources")
+                .join(&target.file_name);
+            let bytes = fs::read(file_path)
+                .await
+                .map_err(|_| AppError::uploaded_file_not_found())?;
+            let mut headers = HeaderMap::new();
+            headers.insert(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static("application/octet-stream"),
+            );
+            headers.insert(
+                header::CONTENT_DISPOSITION,
+                HeaderValue::from_str(&target.content_disposition)
+                    .map_err(|_| AppError::internal())?,
+            );
+
+            Ok((StatusCode::OK, headers, bytes).into_response())
+        }
+    }
 }
 
 async fn create_download_link(

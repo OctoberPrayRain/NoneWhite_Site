@@ -8,6 +8,7 @@ use crate::{
     dto::download_links::{DownloadLinkRequest, DownloadLinkResponse},
     error::{AppError, AppResult},
     repositories::{download_link_repository, game_repository},
+    services::upload_service,
 };
 
 type HmacSha256 = Hmac<Sha256>;
@@ -15,12 +16,25 @@ type HmacSha256 = Hmac<Sha256>;
 const OPENLIST_SCHEME: &str = "openlist:";
 const OPENLIST_GOOGLE_DRIVE_PREFIX: &str = "openlist:/GoogleDrive/";
 const OPENLIST_X_ACCEL_PREFIX: &str = "/internal/openlist";
+const LOCAL_RESOURCE_PREFIX: &str = "/uploads/resources/";
 const PUBLIC_OPENLIST_PLATFORM: &str = "本站托管资源";
 
 #[derive(Clone, Debug)]
 pub struct OpenListDownloadTarget {
     pub x_accel_redirect: String,
     pub content_disposition: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct LocalResourceDownloadTarget {
+    pub file_name: String,
+    pub content_disposition: String,
+}
+
+#[derive(Clone, Debug)]
+pub enum PublicDownloadTarget {
+    OpenList(OpenListDownloadTarget),
+    LocalResource(LocalResourceDownloadTarget),
 }
 
 pub async fn list_download_links(
@@ -117,6 +131,18 @@ pub async fn openlist_download_accel_target(
     game_id: i64,
     id: i64,
 ) -> AppResult<OpenListDownloadTarget> {
+    match public_download_target(pool, openlist_config, game_id, id).await? {
+        PublicDownloadTarget::OpenList(target) => Ok(target),
+        PublicDownloadTarget::LocalResource(_) => Err(AppError::download_link_not_found()),
+    }
+}
+
+pub async fn public_download_target(
+    pool: &PgPool,
+    openlist_config: &OpenListConfig,
+    game_id: i64,
+    id: i64,
+) -> AppResult<PublicDownloadTarget> {
     ensure_approved_game_exists(pool, game_id).await?;
     if id <= 0 {
         return Err(AppError::download_link_not_found());
@@ -127,20 +153,32 @@ pub async fn openlist_download_accel_target(
         .map_err(|_| AppError::internal())?
         .ok_or_else(AppError::download_link_not_found)?;
 
-    if !is_openlist_url(&link.url) {
-        return Err(AppError::download_link_not_found());
+    if is_openlist_url(&link.url) {
+        let marker = validate_openlist_marker(link.url)?;
+        let file_name = openlist_download_file_name(&marker)?;
+
+        return Ok(PublicDownloadTarget::OpenList(OpenListDownloadTarget {
+            x_accel_redirect: to_x_accel_redirect_target(&marker, &openlist_config.token)?,
+            content_disposition: content_disposition_attachment(&file_name)?,
+        }));
     }
 
-    let marker = validate_openlist_marker(link.url)?;
-    let file_name = openlist_download_file_name(&marker)?;
+    if is_local_resource_url(&link.url) {
+        let marker = validate_local_resource_marker(link.url)?;
+        let file_name = local_resource_file_name(&marker)?;
 
-    Ok(OpenListDownloadTarget {
-        x_accel_redirect: to_x_accel_redirect_target(&marker, &openlist_config.token)?,
-        content_disposition: content_disposition_attachment(&file_name)?,
-    })
+        return Ok(PublicDownloadTarget::LocalResource(
+            LocalResourceDownloadTarget {
+                content_disposition: content_disposition_attachment(&file_name)?,
+                file_name,
+            },
+        ));
+    }
+
+    Err(AppError::download_link_not_found())
 }
 
-fn validate_download_link_request(
+pub(crate) fn validate_download_link_request(
     mut request: DownloadLinkRequest,
 ) -> AppResult<DownloadLinkRequest> {
     request.platform = required_text(request.platform)?;
@@ -169,6 +207,10 @@ fn validate_download_url(value: String) -> AppResult<String> {
         return validate_openlist_marker(value);
     }
 
+    if is_local_resource_url(&value) {
+        return validate_local_resource_marker(value);
+    }
+
     if value.chars().any(char::is_control)
         || !(normalized.starts_with("https://") || normalized.starts_with("http://"))
     {
@@ -180,6 +222,10 @@ fn validate_download_url(value: String) -> AppResult<String> {
 
 fn is_openlist_url(value: &str) -> bool {
     value.trim().starts_with(OPENLIST_SCHEME)
+}
+
+fn is_local_resource_url(value: &str) -> bool {
+    value.trim().starts_with(LOCAL_RESOURCE_PREFIX)
 }
 
 fn validate_openlist_marker(value: String) -> AppResult<String> {
@@ -206,8 +252,28 @@ fn validate_openlist_marker(value: String) -> AppResult<String> {
     Ok(value)
 }
 
+fn validate_local_resource_marker(value: String) -> AppResult<String> {
+    let value = required_text(value)?;
+    if value.chars().any(char::is_control)
+        || value.contains('?')
+        || value.contains('#')
+        || value.contains('\\')
+        || value.contains('%')
+        || !value.starts_with(LOCAL_RESOURCE_PREFIX)
+    {
+        return Err(AppError::download_link_invalid());
+    }
+
+    let file_name = &value[LOCAL_RESOURCE_PREFIX.len()..];
+    if file_name.contains('/') || !upload_service::is_safe_file_name(file_name) {
+        return Err(AppError::download_link_invalid());
+    }
+
+    Ok(value)
+}
+
 fn to_public_download_url(game_id: i64, id: i64, url: &str) -> String {
-    if is_openlist_url(url) {
+    if is_protected_download_url(url) {
         format!("/api/games/{game_id}/download-links/{id}/download")
     } else {
         url.to_string()
@@ -215,14 +281,18 @@ fn to_public_download_url(game_id: i64, id: i64, url: &str) -> String {
 }
 
 fn to_public_download_link_response(mut link: DownloadLinkResponse) -> DownloadLinkResponse {
-    let is_openlist = is_openlist_url(&link.url);
+    let is_protected = is_protected_download_url(&link.url);
     link.url = to_public_download_url(link.game_id, link.id, &link.url);
-    link.platform = if is_openlist {
+    link.platform = if is_protected {
         PUBLIC_OPENLIST_PLATFORM.to_string()
     } else {
         neutralize_public_provider_text(&link.platform)
     };
     link
+}
+
+fn is_protected_download_url(value: &str) -> bool {
+    is_openlist_url(value) || is_local_resource_url(value)
 }
 
 fn neutralize_public_provider_text(value: &str) -> String {
@@ -244,6 +314,14 @@ fn openlist_download_file_name(marker: &str) -> AppResult<String> {
         .ok_or_else(AppError::download_link_invalid)?;
 
     Ok(file_name.to_string())
+}
+
+fn local_resource_file_name(marker: &str) -> AppResult<String> {
+    marker
+        .strip_prefix(LOCAL_RESOURCE_PREFIX)
+        .filter(|file_name| upload_service::is_safe_file_name(file_name))
+        .map(str::to_string)
+        .ok_or_else(AppError::download_link_invalid)
 }
 
 fn content_disposition_attachment(file_name: &str) -> AppResult<String> {
@@ -465,6 +543,12 @@ mod tests {
     }
 
     #[test]
+    fn validate_download_url_accepts_local_resource_marker() {
+        let url = "/uploads/resources/resource-9-1234567890.zip".to_string();
+        validate_download_url(url).expect("local resource marker should be valid");
+    }
+
+    #[test]
     fn validate_openlist_marker_accepts_chinese_and_space_filename() {
         let url = "openlist:/GoogleDrive/ensemble/少女 文件.rar".to_string();
         validate_openlist_marker(url).expect("Chinese and space filenames should be valid");
@@ -486,6 +570,15 @@ mod tests {
     fn is_openlist_url_rejects_empty_and_blank() {
         assert!(!is_openlist_url(""));
         assert!(!is_openlist_url("   "));
+    }
+
+    #[test]
+    fn is_local_resource_url_recognizes_local_prefix() {
+        assert!(is_local_resource_url(
+            "/uploads/resources/resource-9-1234567890.zip"
+        ));
+        assert!(!is_local_resource_url("/uploads/images/cover.png"));
+        assert!(!is_local_resource_url("https://example.invalid/file.zip"));
     }
 
     #[test]
@@ -541,8 +634,41 @@ mod tests {
     }
 
     #[test]
+    fn validate_local_resource_marker_rejects_path_traversal() {
+        let error =
+            validate_local_resource_marker("/uploads/resources/../../secret.zip".to_string())
+                .expect_err("local resource traversal should be rejected");
+
+        assert_eq!(error.code, 40015);
+    }
+
+    #[test]
+    fn validate_local_resource_marker_rejects_nested_path() {
+        let error =
+            validate_local_resource_marker("/uploads/resources/nested/file.zip".to_string())
+                .expect_err("local resource marker should name one safe file");
+
+        assert_eq!(error.code, 40015);
+    }
+
+    #[test]
+    fn validate_local_resource_marker_rejects_encoded_path_confusion() {
+        let error =
+            validate_local_resource_marker("/uploads/resources/%2e%2e-secret.zip".to_string())
+                .expect_err("encoded local resource path should be rejected");
+
+        assert_eq!(error.code, 40015);
+    }
+
+    #[test]
     fn to_public_download_url_maps_openlist_to_site_local() {
         let result = to_public_download_url(42, 7, "openlist:/GoogleDrive/abc123/file.zip");
+        assert_eq!(result, "/api/games/42/download-links/7/download");
+    }
+
+    #[test]
+    fn to_public_download_url_maps_local_resource_to_site_local() {
+        let result = to_public_download_url(42, 7, "/uploads/resources/resource-9-123.zip");
         assert_eq!(result, "/api/games/42/download-links/7/download");
     }
 
@@ -569,6 +695,13 @@ mod tests {
     }
 
     #[test]
+    fn to_public_download_url_never_exposes_local_resource_marker() {
+        let result = to_public_download_url(42, 7, "/uploads/resources/resource-9-123.zip");
+        assert_eq!(result, "/api/games/42/download-links/7/download");
+        assert!(!result.contains("/uploads/resources/"));
+    }
+
+    #[test]
     fn public_download_link_response_neutralizes_openlist_platform() {
         let response = to_public_download_link_response(DownloadLinkResponse {
             id: 7,
@@ -586,6 +719,25 @@ mod tests {
         assert_eq!(response.url, "/api/games/42/download-links/7/download");
         assert!(!response.platform.to_ascii_lowercase().contains("openlist"));
         assert!(!response.url.to_ascii_lowercase().contains("openlist"));
+    }
+
+    #[test]
+    fn public_download_link_response_hides_local_resource_marker() {
+        let response = to_public_download_link_response(DownloadLinkResponse {
+            id: 7,
+            game_id: 42,
+            platform: "User upload".to_string(),
+            url: "/uploads/resources/resource-9-123.zip".to_string(),
+            extract_code: None,
+            password: None,
+            file_size: Some("1,024 bytes".to_string()),
+            created_at: "2026-06-16T00:00:00Z".to_string(),
+            updated_at: "2026-06-16T00:00:00Z".to_string(),
+        });
+
+        assert_eq!(response.platform, PUBLIC_OPENLIST_PLATFORM);
+        assert_eq!(response.url, "/api/games/42/download-links/7/download");
+        assert!(!response.url.contains("/uploads/resources/"));
     }
 
     #[test]
@@ -615,6 +767,14 @@ mod tests {
         .expect("valid OpenList marker should expose archive filename");
 
         assert_eq!(file_name, "023-ensemble-我喜欢的人.tar.zst");
+    }
+
+    #[test]
+    fn local_resource_file_name_uses_safe_marker_component() {
+        let file_name = local_resource_file_name("/uploads/resources/resource-9-123.zip")
+            .expect("valid local marker should expose generated filename");
+
+        assert_eq!(file_name, "resource-9-123.zip");
     }
 
     #[test]
