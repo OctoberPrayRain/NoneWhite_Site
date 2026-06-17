@@ -26,16 +26,16 @@ const routes = [
     },
   },
   {
-    path: '/games',
+    path: '/files',
     name: 'games',
     component: GameListView,
     meta: {
-      label: '游戏列表',
+      label: '文件列表',
       requiresAuth: true,
     },
   },
   {
-    path: '/games/:id',
+    path: '/files/:id',
     name: 'game-detail',
     component: GameDetailView,
     meta: {
@@ -70,11 +70,11 @@ const routes = [
     },
   },
   {
-    path: '/submit-game',
+    path: '/submit-file',
     name: 'submit-game',
     component: () => import('../views/SubmitGameView.vue'),
     meta: {
-      label: '提交游戏',
+      label: '提交文件',
       requiresAuth: true,
     },
   },

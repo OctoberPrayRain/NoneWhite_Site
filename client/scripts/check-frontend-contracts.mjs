@@ -94,9 +94,9 @@ const requiredPaths = [
   '/login',
   '/register',
   '/profile',
-  '/games',
-  '/games/:id',
-  '/submit-game',
+  '/files',
+  '/files/:id',
+  '/submit-file',
   '/search',
   '/admin',
 ]
@@ -121,8 +121,8 @@ function findRouteBlock(sourcePath) {
   const re = new RegExp(
     `\\{\\s*\\n\\s*path\\s*:\\s*['"\`]\\s*${escapeRegExp(sourcePath)}\\s*['"\`]`
   )
-  const match = sourcePath === '/games/:id'
-    ? /{\s*\n\s*path\s*:\s*['"`]\s*\/games\/:id\s*['"`]/
+  const match = sourcePath === '/files/:id'
+    ? /{\s*\n\s*path\s*:\s*['"`]\s*\/files\/:id\s*['"`]/
     : re
   const idx = match.exec(routerSrc)
   if (!idx) return null
@@ -138,7 +138,7 @@ function findRouteBlock(sourcePath) {
   return rest
 }
 
-const authRoutes = ['/profile', '/games', '/games/:id', '/submit-game', '/search']
+const authRoutes = ['/profile', '/files', '/files/:id', '/submit-file', '/search']
 for (const rp of authRoutes) {
   const block = findRouteBlock(rp)
   if (!block) {
