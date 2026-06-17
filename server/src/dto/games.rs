@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::models::game::{CategoryRow, GameRow, ScreenshotRow, TagRow};
+use crate::{
+    dto::download_links::DownloadLinkRequest,
+    models::game::{CategoryRow, GameRow, ScreenshotRow, TagRow},
+};
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -41,6 +44,8 @@ pub struct CreateGameRequest {
     pub category_id: i64,
     pub tag_ids: Vec<i64>,
     pub screenshots: Vec<GameScreenshotRequest>,
+    #[serde(default)]
+    pub download_links: Vec<DownloadLinkRequest>,
 }
 
 pub type UpdateGameRequest = CreateGameRequest;
@@ -217,7 +222,7 @@ mod tests {
             developer: "OpenList Studio".to_string(),
             publisher: "OpenList Library".to_string(),
             release_date: None,
-            description: "OpenList 托管的 Bakappuru 游戏压缩包资源，按分卷提供下载。".to_string(),
+            description: "OpenList 托管的 Bakappuru 资源压缩包，按分卷提供下载。".to_string(),
             cover_url: None,
             category_id: 3,
             category_name: "恋爱".to_string(),
@@ -242,7 +247,7 @@ mod tests {
         assert_eq!(response.publisher, "本站资料库");
         assert_eq!(
             response.description,
-            "本站托管的 Bakappuru 游戏压缩包资源，按分卷提供下载。"
+            "本站托管的 Bakappuru 资源压缩包，按分卷提供下载。"
         );
         assert!(!public_text.to_ascii_lowercase().contains("openlist"));
     }
@@ -253,5 +258,23 @@ mod tests {
 
         assert_eq!(response.publisher, "OpenList Library");
         assert!(response.description.contains("OpenList"));
+    }
+
+    #[test]
+    fn create_game_request_defaults_missing_download_links() {
+        let request: CreateGameRequest = serde_json::from_value(serde_json::json!({
+            "title": "Title",
+            "developer": "Dev",
+            "publisher": "Pub",
+            "releaseDate": null,
+            "description": "Desc",
+            "coverUrl": null,
+            "categoryId": 1,
+            "tagIds": [],
+            "screenshots": []
+        }))
+        .expect("missing downloadLinks should remain compatible");
+
+        assert!(request.download_links.is_empty());
     }
 }

@@ -10,7 +10,8 @@ use crate::{
     },
     error::{AppError, AppResult},
     models::game::TagRow,
-    repositories::game_repository,
+    repositories::{download_link_repository, game_repository},
+    services::download_link_service,
 };
 
 const DEFAULT_PAGE: i64 = 1;
@@ -134,6 +135,12 @@ async fn create_game_with_approval(
     approval_status: &str,
     submitted_by_user_id: Option<i64>,
 ) -> AppResult<GameResponse> {
+    let download_links = request
+        .download_links
+        .clone()
+        .into_iter()
+        .map(download_link_service::validate_download_link_request)
+        .collect::<AppResult<Vec<_>>>()?;
     let input = validate_game_input(request)?;
     ensure_category_exists(pool, input.category_id).await?;
     let tag_names = ensure_tags_exist(pool, &input.tag_ids).await?;
@@ -161,6 +168,11 @@ async fn create_game_with_approval(
     game_repository::replace_screenshots(&mut tx, game_id, &input.screenshots)
         .await
         .map_err(map_game_write_error)?;
+    for download_link in &download_links {
+        download_link_repository::insert_download_link(&mut tx, game_id, download_link)
+            .await
+            .map_err(map_game_write_error)?;
+    }
     tx.commit().await.map_err(|_| AppError::internal())?;
 
     get_admin_game_detail(pool, game_id).await
@@ -558,6 +570,7 @@ mod tests {
             category_id: 1,
             tag_ids: vec![2, 2, 1],
             screenshots: vec![],
+            download_links: vec![],
         })
         .expect("valid game input should pass");
 
@@ -581,6 +594,7 @@ mod tests {
             category_id: 1,
             tag_ids: vec![],
             screenshots: vec![],
+            download_links: vec![],
         })
         .expect_err("blank title should fail");
 
