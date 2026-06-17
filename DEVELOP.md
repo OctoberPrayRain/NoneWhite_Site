@@ -317,21 +317,24 @@ npm run dev             # → 127.0.0.1:5173
 
 ### Phase 2 / Phase 5 上传配置
 
-当前图片和资源上传采用本地开发存储策略：
+当前图片上传继续采用本地开发存储策略，资源文件上传由后端转存到 OpenList：
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
 | `UPLOAD_DIR` | `uploads` | 相对 `server/` 的上传目录 |
 | `UPLOAD_PUBLIC_BASE_URL` | `/uploads` | API 返回给前端的图片公开 URL 前缀 |
+| `OPENLIST_BASE_URL` | 空 | OpenList 服务地址，例如 `https://openlist.example.com` |
+| `OPENLIST_TOKEN` | 空 | OpenList 访问 token；上传请求直接放在 `Authorization` 头中 |
+| `OPENLIST_RESOURCE_UPLOAD_DIR` | 空 | 资源上传目标目录，必须使用 `openlist:/GoogleDrive/...` 格式且提前创建 |
 | `MAX_AVATAR_SIZE_BYTES` | `2097152` | 头像最大 2 MiB |
 | `MAX_IMAGE_SIZE_BYTES` | `5242880` | 通用图片（封面、预览图等）最大 5 MiB |
 | `MAX_RESOURCE_SIZE_BYTES` | `52428800` | 资源文件最大体积（默认 50 MiB） |
 
 - `POST /api/users/me/avatar`：使用 `multipart/form-data`，字段名为 `avatar`。成功后返回 `{ "avatarUrl": "/uploads/avatars/..." }`，供静态读取。
 - `POST /api/uploads/images`（认证用户）与 `POST /api/admin/uploads/images`（管理员）：使用 `multipart/form-data`，字段名为 `image`。成功后返回 `{ "imageUrl": "/uploads/images/..." }`，供公开静态读取。
-- `POST /api/uploads/resources`（认证用户，包含管理员）：使用 `multipart/form-data`，字段名为 `resource`。成功后返回包含内部存储路径标记的 `data.resourceUrl`（如 `/uploads/resources/...`）以及 `fileName` 和 `fileSize`。`resourceUrl` 会作为内部标记保存在 `download_links` 表中，它并非直接公开的静态 URL。该目录不会公开暴露给前端。
+- `POST /api/uploads/resources`（认证用户，包含管理员）：使用 `multipart/form-data`，字段名为 `resource`。成功后返回包含内部存储路径标记的 `data.resourceUrl`（如 `openlist:/GoogleDrive/.../resource.zip`）以及原始上传名 `fileName` 和 `fileSize`。`resourceUrl` 会作为内部标记保存在 `download_links` 表中，它并非直接公开的静态 URL。缺少 OpenList 配置或 OpenList 上传失败时，该接口会失败关闭，不会写入本地资源目录。
 
-资源文件的下载由后端控制：包含此标记且公开审核通过的下载链接将通过 `GET /api/games/{gameId}/download-links/{id}/download` 访问，后端通过校验后下发资源数据。
+资源文件的下载由后端控制：包含此标记且公开审核通过的下载链接将通过 `GET /api/games/{gameId}/download-links/{id}/download` 访问，后端通过校验后下发资源数据。旧数据中已有的 `/uploads/resources/...` 内部标记仍保持兼容，但新资源上传不再持久写入该目录。
 
 ### Phase 2 后端 API 示例
 

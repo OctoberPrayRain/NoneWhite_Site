@@ -167,7 +167,9 @@ DB_SETUP_DRIVER=local ./setupDatabase.sh
 
 ### 资源文件的上传与下载
 
-资源文件均通过应用界面（用户 `/submit-file` 或后台 `/admin`）上传。下载资源文件时，必须通过资源详情页提供的合法下载链接进行访问（由后端统一接口 `/api/games/{gameId}/download-links/{id}/download` 控制），不能直接通过浏览器访问 `/uploads/resources` 目录。
+资源文件均通过应用界面（用户 `/submit-file` 或后台 `/admin`）上传。新上传的资源会由后端写入 `OPENLIST_RESOURCE_UPLOAD_DIR` 指定的 OpenList 目录，目录格式为 `openlist:/GoogleDrive/...`，并且该目录需要提前在 OpenList 中创建。后端需要配置 `OPENLIST_BASE_URL` 与 `OPENLIST_TOKEN`，缺少配置或 OpenList 上传失败时会直接返回上传失败，不会回退到本地资源目录。
+
+下载资源文件时，必须通过资源详情页提供的合法下载链接进行访问（由后端统一接口 `/api/games/{gameId}/download-links/{id}/download` 控制）。旧数据中已有的 `/uploads/resources/...` 内部标记仍可通过受控下载接口访问，但新资源上传不会再持久写入该目录。
 
 ## 验证命令
 
