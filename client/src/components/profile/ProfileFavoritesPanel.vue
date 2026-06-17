@@ -104,7 +104,7 @@ watch(() => authToken.value, (token) => {
       <h2>收藏列表</h2>
     </div>
 
-    <p class="form-help">这里展示您收藏的所有游戏。</p>
+    <p class="form-help">这里展示您收藏的所有文件。</p>
 
     <BaseLoading v-if="loading && !hasFavorites" text="正在加载收藏列表..." />
 
@@ -120,7 +120,7 @@ watch(() => authToken.value, (token) => {
     <EmptyState
       v-else-if="loadedOnce && !hasFavorites"
       title="暂时没有收藏"
-      description="去游戏详情页收藏你感兴趣的作品，这里会自动展示最新列表。"
+      description="去文件详情页收藏你感兴趣的作品，这里会自动展示最新列表。"
     />
 
     <template v-else>

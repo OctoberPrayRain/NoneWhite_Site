@@ -211,7 +211,7 @@ onMounted(refreshProfile)
   <section class="page-heading profile-heading">
     <div class="eyebrow">User Center</div>
     <h1>个人中心</h1>
-    <p>在这里管理您的个人资料、修改密码、上传头像，并查看您收藏的游戏列表。</p>
+    <p>在这里管理您的个人资料、修改密码、上传头像，并查看您收藏的文件列表。</p>
   </section>
 
   <section v-if="!isAuthenticated" class="status-panel auth-empty-panel">
