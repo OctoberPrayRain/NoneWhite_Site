@@ -4,28 +4,28 @@ const DEFAULT_PAGE = 1
 const DEFAULT_PAGE_SIZE = 12
 
 const MOCK_CATEGORIES = [
-  { id: 1, name: '剧情', slug: 'story' },
-  { id: 2, name: '悬疑', slug: 'mystery' },
-  { id: 3, name: '恋爱', slug: 'romance' },
-  { id: 4, name: '奇幻', slug: 'fantasy' },
+  { id: 1, name: '文档', slug: 'document' },
+  { id: 2, name: '表格', slug: 'spreadsheet' },
+  { id: 3, name: '素材', slug: 'asset' },
+  { id: 4, name: '教程', slug: 'tutorial' },
 ]
 
 const MOCK_TAGS = [
-  { id: 1, name: '校园', slug: 'school' },
-  { id: 2, name: '治愈', slug: 'healing' },
-  { id: 3, name: '多结局', slug: 'multi-ending' },
-  { id: 4, name: '悬疑', slug: 'suspense' },
-  { id: 5, name: '幻想', slug: 'fantasy' },
+  { id: 1, name: '模板', slug: 'template' },
+  { id: 2, name: '说明', slug: 'guide' },
+  { id: 3, name: '多格式', slug: 'multi-format' },
+  { id: 4, name: '归档', slug: 'archive' },
+  { id: 5, name: '示例', slug: 'sample' },
 ]
 
 const MOCK_GAMES = [
   {
     id: 1,
-    title: '雨后第七封信',
+    title: '项目交付说明模板',
     developer: 'NoneWhite Studio',
     publisher: 'NoneWhite',
     release_date: '2024-01-18',
-    description: '一段发生在旧教学楼里的短篇视觉小说，围绕失物、信件与毕业前夜展开。',
+    description: '面向项目归档的说明文档，包含交付清单、版本记录和验收备注。',
     category: MOCK_CATEGORIES[0],
     tags: [MOCK_TAGS[0], MOCK_TAGS[1], MOCK_TAGS[2]],
     likes_count: 128,
@@ -37,11 +37,11 @@ const MOCK_GAMES = [
   },
   {
     id: 2,
-    title: '白塔回声',
+    title: '季度数据整理表',
     developer: 'Amber Loop',
     publisher: 'NoneWhite',
     release_date: '2024-04-02',
-    description: '探索封闭白塔中的记忆房间，拼合角色之间被抹去的约定。',
+    description: '用于整理季度数据的表格文件，内含分类字段、汇总页和备注模板。',
     category: MOCK_CATEGORIES[1],
     tags: [MOCK_TAGS[3], MOCK_TAGS[2]],
     likes_count: 92,
@@ -50,11 +50,11 @@ const MOCK_GAMES = [
   },
   {
     id: 3,
-    title: '薄荷色夏日',
+    title: '品牌素材打包清单',
     developer: 'Mint Days',
     publisher: 'Indie Harbor',
     release_date: '2023-08-12',
-    description: '以社团活动为主线的轻恋爱故事，包含多条角色支线与夏日祭章节。',
+    description: '汇总标识、配色、图像和授权说明的素材包索引，便于团队统一取用。',
     category: MOCK_CATEGORIES[2],
     tags: [MOCK_TAGS[0], MOCK_TAGS[1], MOCK_TAGS[2]],
     likes_count: 210,
@@ -63,11 +63,11 @@ const MOCK_GAMES = [
   },
   {
     id: 4,
-    title: '星屑档案室',
+    title: '归档目录示例',
     developer: 'Orbit Type',
     publisher: 'NoneWhite',
     release_date: '2025-02-26',
-    description: '在漂浮档案馆中检索星球文明的最后记录，选择会影响档案修复顺序。',
+    description: '展示多级目录、命名规则和文件说明的归档示例，适合快速复用。',
     category: MOCK_CATEGORIES[3],
     tags: [MOCK_TAGS[4], MOCK_TAGS[2]],
     likes_count: 76,
@@ -80,11 +80,11 @@ const MOCK_GAMES = [
   },
   {
     id: 5,
-    title: '午后三点的侦探',
+    title: '会议纪要合集',
     developer: 'Clockwork Note',
     publisher: 'Indie Harbor',
     release_date: '2023-11-09',
-    description: '小镇咖啡馆里的日常推理合集，每个案件都藏着角色关系的新线索。',
+    description: '按主题整理的会议纪要合集，包含行动项、负责人和后续跟进记录。',
     category: MOCK_CATEGORIES[1],
     tags: [MOCK_TAGS[3], MOCK_TAGS[1]],
     likes_count: 154,
@@ -93,11 +93,11 @@ const MOCK_GAMES = [
   },
   {
     id: 6,
-    title: '月台尽头',
+    title: '下载资源说明书',
     developer: 'Silent Rail',
     publisher: 'NoneWhite',
     release_date: '2024-09-21',
-    description: '末班车停靠在不存在的月台，玩家需要在循环中找回乘客的名字。',
+    description: '记录资源下载方式、校验信息和使用注意事项，帮助用户快速确认文件内容。',
     category: MOCK_CATEGORIES[0],
     tags: [MOCK_TAGS[3], MOCK_TAGS[4]],
     likes_count: 188,
@@ -142,9 +142,9 @@ function normalizeScreenshot(screenshot) {
 export function normalizeGame(game) {
   return {
     id: game.id,
-    title: game.title ?? '未命名游戏',
-    developer: game.developer ?? '未知开发商',
-    publisher: game.publisher ?? '未知发行商',
+    title: game.title ?? '未命名文件',
+    developer: game.developer ?? '未知提供方',
+    publisher: game.publisher ?? '未知发布方',
     releaseDate: game.releaseDate ?? game.release_date ?? '',
     description: game.description ?? '',
     coverUrl: game.coverUrl ?? game.cover_url ?? '',
@@ -264,7 +264,7 @@ export async function getGameDetail(id) {
     const game = MOCK_GAMES.find((item) => String(item.id) === String(id))
 
     if (!game) {
-      throw new ApiError('游戏不存在或暂时无法加载', {
+      throw new ApiError('文件不存在或暂时无法加载', {
         status: 404,
         data: {
           isMockFallback: true,
