@@ -107,6 +107,10 @@ impl AppError {
         Self::new(StatusCode::BAD_REQUEST, 40017, "Resource file is too large")
     }
 
+    pub const fn resource_upload_failed() -> Self {
+        Self::new(StatusCode::BAD_GATEWAY, 50201, "Resource upload failed")
+    }
+
     pub const fn invalid_credentials() -> Self {
         Self::new(StatusCode::UNAUTHORIZED, 40101, "Invalid email or password")
     }
