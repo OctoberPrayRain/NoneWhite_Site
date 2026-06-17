@@ -11,9 +11,11 @@ pub mod services;
 pub mod state;
 
 use axum::{extract::DefaultBodyLimit, Router};
-use std::path::Path;
+use std::{path::Path, time::Duration};
 use tokio::net::TcpListener;
 use tracing::info;
+
+const OUTBOUND_HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[tokio::main]
 async fn main() {
@@ -22,9 +24,14 @@ async fn main() {
 
     let config = config::AppConfig::from_env();
     let db_pool = db::create_pool(&config.database).expect("failed to create database pool");
+    let http_client = build_http_client();
     let upload_body_limit_bytes = upload_body_limit_bytes(&config.upload);
     let address = config.server.address();
-    let state = state::AppState { config, db_pool };
+    let state = state::AppState {
+        config,
+        db_pool,
+        http_client,
+    };
 
     let app = Router::new()
         .merge(routes::api_routes())
@@ -47,6 +54,13 @@ fn upload_body_limit_bytes(upload_config: &config::UploadConfig) -> usize {
         .max(upload_config.max_image_size_bytes)
         .max(upload_config.max_avatar_size_bytes)
         .saturating_add(1024 * 1024)
+}
+
+fn build_http_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .timeout(OUTBOUND_HTTP_TIMEOUT)
+        .build()
+        .expect("failed to build outbound HTTP client")
 }
 
 fn load_env_files() {
