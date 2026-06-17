@@ -60,7 +60,7 @@ async function handleSubmit() {
       <div class="eyebrow">Welcome Back</div>
       <h1>欢迎登录</h1>
       <p>
-        欢迎回到您的游戏世界。在这里管理您的游戏库，参与社区交流，并获取最新独立游戏。
+        欢迎回到您的文件世界。在这里管理您的文件库，参与社区交流，并获取最新创意作品。
       </p>
     </div>
 

@@ -71,9 +71,9 @@ async function handleSubmit() {
   <section class="auth-page">
     <div class="auth-copy">
       <div class="eyebrow">Create Account</div>
-      <h1>加入玩家社区</h1>
+      <h1>加入用户社区</h1>
       <p>
-        加入我们的独立游戏分享交流社区，建立你的游戏库，与众多玩家共同探索游戏世界。
+        加入我们的综合资源分享交流社区，建立你的文件库，与众多用户共同探索文件世界。
       </p>
     </div>
 
