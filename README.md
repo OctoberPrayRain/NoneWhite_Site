@@ -1,6 +1,6 @@
 # NoneWhite_Site — 空白分享站
 
-> Galgame 分享交流社区项目 · 开发中
+> 资源分享交流社区项目 · 开发中
 
 <p align="center">
   <img src="https://img.shields.io/badge/Status-开发中-yellow" alt="开发中" />
@@ -14,7 +14,7 @@
 
 ## 项目简介
 
-一个 Galgame 分享站，用户可以浏览 Galgame 详情页、点赞评论、获取网盘下载链接。
+一个资源分享站，用户可以浏览资源详情页、点赞评论、获取网盘下载链接。
 
 **技术栈**：Vue3 + Rust + PostgreSQL  
 **架构**：前后端分离
@@ -62,23 +62,23 @@
 - [x] 前端头像上传交互（Profile 页已接入文件选择、2 MiB / PNG / JPEG / WebP 前端校验，并使用 `FormData` 字段 `avatar` 调用 `POST /api/users/me/avatar`；已在 Windows + Docker PostgreSQL 环境完成头像上传与个人中心头像回显验证）
 - [x] 个人中心 — 收藏列表选项卡（Phase 2 先做 UI 占位，Phase 4 接入数据）
 
-### Phase 3 — 游戏浏览（前后端可并行）
+### Phase 3 — 资源浏览（前后端可并行）
 
 > 目标：先做出公开浏览，管理员功能放 Phase 5
 
 **后端：**
 - [x] Game / Category / Tag Model + 建表（已新增 `server/migrations/20260612000000_create_games.sql`，覆盖 `games` / `categories` / `tags` / `game_tags` / `screenshots`）
-- [x] 游戏列表 API（分页 + 分类筛选，`GET /api/games?page=1&pageSize=12&categoryId=1&tagId=2`）
-- [x] 游戏详情 API（`GET /api/games/:id`，详情内嵌 `category` / `tags` / `screenshots`）
+- [x] 资源列表 API（分页 + 分类筛选，`GET /api/games?page=1&pageSize=12&categoryId=1&tagId=2`）
+- [x] 资源详情 API（`GET /api/games/:id`，详情内嵌 `category` / `tags` / `screenshots`）
 - [x] 分类 / 标签 API（`GET /api/categories` / `GET /api/tags`）
 
 **前端：**
-- [x] 游戏列表页（卡片展示 + 分页 + 分类筛选 + 标签筛选 + URL query 状态同步）
-- [x] 游戏详情页（信息展示 + 封面 + 分类/标签 + 截图轮播 + 下载/评论占位）
-- [x] 游戏 API client：`client/src/api/games.js`，基于 `client/src/api/http.js`，提供 `getGames`、`getGameDetail`、`getCategories`、`getTags`
-- [x] 游戏组件：`GameCard.vue`、`GameFilter.vue`、`ScreenshotCarousel.vue`
+- [x] 资源列表页（卡片展示 + 分页 + 分类筛选 + 标签筛选 + URL query 状态同步）
+- [x] 资源详情页（信息展示 + 封面 + 分类/标签 + 预览图轮播 + 下载/评论占位）
+- [x] 资源 API client：`client/src/api/games.js`，基于 `client/src/api/http.js`，提供 `getGames`、`getGameDetail`、`getCategories`、`getTags`
+- [x] 资源组件：`GameCard.vue`、`GameFilter.vue`、`ScreenshotCarousel.vue`
 - [x] 公共状态组件：`Pagination.vue`、`BaseLoading.vue`、`EmptyState.vue`
-- [x] 路由接入：`/games`、`/games/:id`；`/games` 已通过 `meta.label` 显示在 Header 导航中
+- [x] 路由接入：`/files`、`/files/:id`；`/files` 已通过 `meta.label` 显示在 Header 导航中
 
 **数据：**
 - [x] 准备一批 seed 假数据（`server/seeds/dev_phase3_games.sql`，由 `setupDatabase.sh` / `setupDatabase.bat` 自动应用）
@@ -86,10 +86,10 @@
 **Phase 3 前端状态说明：**
 - [x] `npm --prefix client run build` 已通过。
 - [x] `npm run lint` 已通过。
-- [x] 浏览器验证 `/games`、`/games?page=1&categoryId=1&tagId=1`、`/games/1?page=1&categoryId=1&tagId=1` 可正常渲染。
+- [x] 浏览器验证 `/files`、`/files?page=1&categoryId=1&tagId=1`、`/files/1?page=1&categoryId=1&tagId=1` 可正常渲染。
 - [x] 当前前端支持 mock fallback，仅作为开发兜底；真实后端接口已实现后，mock fallback 不再代表接口完成状态。
 - [x] 真实后端 API 已在本机 PostgreSQL 环境通过 curl 验证：`/api/games`、`/api/games/1`、`/api/categories`。
-- [x] 浏览器 `/games` 页面已通过真实后端 + PostgreSQL seed 数据联调验证；mock fallback 仅保留为接口异常时的开发兜底。
+- [x] 浏览器 `/files` 页面已通过真实后端 + PostgreSQL seed 数据联调验证；mock fallback 仅保留为接口异常时的开发兜底。
 
 **Phase 3 后端 / 联调状态：**
 - [x] `games` / `categories` / `tags` / `game_tags` / `screenshots` 表已通过 SQL migration 定义。
@@ -97,10 +97,10 @@
 - [x] 分页参数确认为 `page` / `pageSize`。
 - [x] 筛选参数确认为 `categoryId` / `tagId`。
 - [x] 图片 URL 当前按数据库中存储的相对/原样字符串返回；开发 seed 暂用空字符串占位。
-- [x] `screenshots` 包含在详情接口中，不新增独立截图接口。
+- [x] `screenshots` 包含在详情接口中，不新增独立预览图接口。
 - [x] `category` / `tags` 字段使用 `{ id, name, slug }`，与前端契约一致。
 - [x] 已在本机 PostgreSQL 环境执行 Phase 3 migration + seed，并跑通真实后端 API：`GET /api/games`、`GET /api/games/:id`、`GET /api/categories`。
-- [x] 浏览器 `/games` 真实数据联调已通过：Vite proxy 读取运行中的 Rust 后端与 PostgreSQL seed 数据，未使用 mock fallback。
+- [x] 浏览器 `/files` 真实数据联调已通过：Vite proxy 读取运行中的 Rust 后端与 PostgreSQL seed 数据，未使用 mock fallback。
 
 ### Phase 4 — 互动功能（前后端可并行）
 
@@ -112,7 +112,7 @@
 **Phase 4 后端状态说明：**
 - [x] 已新增 `server/migrations/20260613000000_create_interactions.sql`，覆盖 `comments` / `likes` / `favorites` 表、级联外键、列表/计数索引和 rollback 说明。
 - [x] 已实现公开评论列表、认证评论发表/删除、认证点赞/取消、认证收藏/取消、认证个人收藏列表 API。
-- [x] 评论内容后端校验：trim 后非空，最多 1000 字符；回复父评论必须属于同一游戏。
+- [x] 评论内容后端校验：trim 后非空，最多 1000 字符；回复父评论必须属于同一资源。
 - [x] 点赞和收藏写入幂等，并刷新 `games.likes_count` / `games.favorites_count`。
 - [x] 已在本机 Windows + WSL PostgreSQL 16 环境补跑 Phase 3/4 migrations + seed，并完成 Phase 4 API happy path / permission path 验证：公开评论列表返回空列表；认证评论发表与回复返回 HTTP 201；普通用户删除他人评论返回 HTTP 403；点赞/收藏重复提交保持幂等计数；`GET /api/users/me/favorites` 可读到收藏列表；取消点赞/收藏后计数归零；删除父评论后回复因 `ON DELETE CASCADE` 一并移除。
 
@@ -122,43 +122,43 @@
 - [x] 收藏按钮组件
 
 **Phase 4 前端状态说明：**
-- [x] 游戏详情页已接入点赞按钮、收藏按钮、评论列表、评论发表、回复和删除自己评论的前端交互。
+- [x] 资源详情页已接入点赞按钮、收藏按钮、评论列表、评论发表、回复和删除自己评论的前端交互。
 - [x] 个人中心已将 Phase 2 的收藏占位切换为真实收藏列表，并接入 `GET /api/users/me/favorites?page=1&pageSize=12`。
 - [x] 新增 `client/src/api/interactions.js`，统一封装评论 / 点赞 / 收藏 / 我的收藏列表接口，并复用现有 API envelope。
 - [x] `npm --prefix client run build` 已通过。
-- [x] 真实后端运行中的浏览器联调已通过：登录一次性用户后在 `/games/:id` 完成点赞、收藏、发表评论，并在页面中看到实时刷新结果。
+- [x] 真实后端运行中的浏览器联调已通过：登录一次性用户后在 `/files/:id` 完成点赞、收藏、发表评论，并在页面中看到实时刷新结果。
 
 ### Phase 5 — 管理后台与资源
 
 **后端：**
 - [x] 管理员身份中间件（复用 Bearer token 与 `users.role=admin`，非管理员返回 HTTP 403 / `code=40301`）
-- [x] 文件上传接口（图片上传 → 返回 URL，供游戏管理/头像复用；`POST /api/admin/uploads/images`）
-- [x] 游戏管理 CRUD API（管理员专用 `/api/admin/games...`，保持公开 `/api/games` 兼容）
+- [x] 文件上传接口（图片上传 → 返回 URL，供资源管理/头像复用；`POST /api/admin/uploads/images`）
+- [x] 资源管理 CRUD API（管理员专用 `/api/admin/games...`，保持公开 `/api/games` 兼容）
 - [x] 下载链接管理 API（管理员 CRUD + 公开读取 `/api/games/{gameId}/download-links`）
 
 **Phase 5 后端状态说明：**
-- [x] 已新增 `server/migrations/20260614000000_create_download_links.sql`，覆盖 `download_links` 表、`games(id)` 级联外键和按游戏读取索引。
+- [x] 已新增 `server/migrations/20260614000000_create_download_links.sql`，覆盖 `download_links` 表、`games(id)` 级联外键和按资源读取索引。
 - [x] 已实现通用管理员图片上传：`multipart/form-data` 字段 `image`，允许 PNG/JPEG/WebP MIME + 文件签名，默认最大 5 MiB，成功返回 `data.imageUrl=/uploads/images/...`，静态读取为 `/uploads/images/{file}`。
-- [x] 已实现管理员游戏创建、列表、更新、删除；创建/更新会校验分类/标签并在事务中替换 `game_tags` 与 `screenshots`。
+- [x] 已实现管理员资源创建、列表、更新、删除；创建/更新会校验分类/标签并在事务中替换 `game_tags` 与 `screenshots`。
 - [x] 已实现下载链接管理员创建、列表、更新、删除和前台公开读取，响应字段为 `id, gameId, platform, url, extractCode, password, fileSize, createdAt, updatedAt`。
-- [x] Live PostgreSQL Phase 5 curl 联调已通过：管理员图片上传、管理员游戏 CRUD、下载链接管理员 CRUD + 公开读取、普通用户访问管理员接口 `40301` 均通过真实 DB happy/permission path 验证。
+- [x] Live PostgreSQL Phase 5 curl 联调已通过：管理员图片上传、管理员资源 CRUD、下载链接管理员 CRUD + 公开读取、普通用户访问管理员接口 `40301` 均通过真实 DB happy/permission path 验证。
 
 **前端：**
-- [x] 管理员后台 — 游戏管理页（增删改 + 上传封面/截图）
+- [x] 管理员后台 — 资源管理页（增删改 + 上传封面/预览图）
 - [x] 管理员后台 — 下载链接管理页
 - [x] 管理员后台 — 评论管理页（查看 + 删除违规评论）
 - [x] 前台 — 下载区域展示（网盘链接 + 提取码）
 
 **Phase 5 前端状态说明：**
 - [x] 已新增 `/admin` 管理后台路由，管理员权限通过现有 Bearer token 与 `currentUser.role === 'admin'` 判断。
-- [x] 管理后台已接入管理员游戏创建/更新/删除、封面/截图上传、下载链接 CRUD、按游戏查看并删除评论的前端交互。
-- [x] 游戏详情页已接入公开下载链接读取，并展示平台、URL、提取码、密码和文件大小。
-- [x] 已完成浏览器 UI 验证：`/admin` 使用 API stub 验证桌面与移动布局，`/games/1` 使用下载链接 stub 验证前台下载区域展示。
-- [x] Live PostgreSQL Phase 5 前端联调已通过：`/admin` 通过真实管理员账号读取游戏、下载链接和评论资源，`/games/:id` 通过真实公开接口展示下载链接。
+- [x] 管理后台已接入管理员资源创建/更新/删除、封面/预览图上传、下载链接 CRUD、按资源查看并删除评论的前端交互。
+- [x] 资源详情页已接入公开下载链接读取，并展示平台、URL、提取码、密码和文件大小。
+- [x] 已完成浏览器 UI 验证：`/admin` 使用 API stub 验证桌面与移动布局，`/files/1` 使用下载链接 stub 验证前台下载区域展示。
+- [x] Live PostgreSQL Phase 5 前端联调已通过：`/admin` 通过真实管理员账号读取资源、下载链接和评论资源，`/files/:id` 通过真实公开接口展示下载链接。
 
 ### Phase 6 — 搜索与部署
 
-- [x] 搜索 API + 前端搜索页（按标题/开发商/标签，`LIKE %keyword%` + `search_text` 辅助字段）
+- [x] 搜索 API + 前端搜索页（按标题/提供方/标签，`LIKE %keyword%` + `search_text` 辅助字段）
 - [x] 全局响应式适配（本轮覆盖新增搜索页、管理后台、下载区域与导航换行）
 - [ ] Docker 构建镜像 + docker-compose 启动（可选备用路径；已新增构建配置并完成 Compose 静态校验，当前生产部署按用户要求不使用 Docker）
 - [x] Nginx 反向代理配置（托管前端静态文件 + 转发 API 到后端）
@@ -241,15 +241,15 @@ NoneWhite_Site/
 | 表名 | 主要字段 | 说明 |
 |---|---|---|
 | `users` | id, username, email, password_hash, avatar_url, role | 用户 |
-| `games` | id, title, developer, publisher, release_date, description, cover_url, category_id, search_text, likes_count, favorites_count | 游戏 |
+| `games` | id, title, developer, publisher, release_date, description, cover_url, category_id, search_text, likes_count, favorites_count | 资源 |
 | `categories` | id, name, slug | 分类 |
 | `tags` | id, name, slug | 标签 |
-| `game_tags` | game_id, tag_id | 游戏-标签关联 |
+| `game_tags` | game_id, tag_id | 资源-标签关联 |
 | `comments` | id, user_id, game_id, content, parent_id, created_at | 评论 |
 | `likes` | user_id, game_id (联合唯一) | 点赞 |
 | `favorites` | user_id, game_id (联合唯一) | 收藏 |
 | `download_links` | id, game_id, platform, url, extract_code, password, file_size | 下载链接 |
-| `screenshots` | id, game_id, url, sort_order | 截图 |
+| `screenshots` | id, game_id, url, sort_order | 预览图 |
 
 ---
 
@@ -326,7 +326,7 @@ npm run dev             # → 127.0.0.1:5173
 
 `POST /api/users/me/avatar` 使用 `multipart/form-data`，字段名为 `avatar`，当前允许 `image/png`、`image/jpeg`、`image/webp`。上传成功后返回 `{ "avatarUrl": "/uploads/avatars/..." }`，并通过后端 `/uploads/avatars/{file}` 静态读取。本地上传文件已通过 `.gitignore` 排除，不要提交真实用户上传内容。
 
-`POST /api/admin/uploads/images` 使用 `multipart/form-data`，字段名为 `image`，需要管理员 Bearer token，复用 PNG/JPEG/WebP MIME 与文件签名校验。上传成功后返回 `{ "imageUrl": "/uploads/images/..." }`，并通过 `/uploads/images/{file}` 静态读取，供游戏封面、截图和后续图片场景复用。
+`POST /api/admin/uploads/images` 使用 `multipart/form-data`，字段名为 `image`，需要管理员 Bearer token，复用 PNG/JPEG/WebP MIME 与文件签名校验。上传成功后返回 `{ "imageUrl": "/uploads/images/..." }`，并通过 `/uploads/images/{file}` 静态读取，供资源封面、预览图和后续图片场景复用。
 
 ### Phase 2 后端 API 示例
 
@@ -405,19 +405,19 @@ curl -i -X POST http://127.0.0.1:3000/api/admin/uploads/images \
   -H 'Authorization: Bearer <admin-token>' \
   -F 'image=@./cover.png;type=image/png'
 
-# 管理员创建游戏：预期 HTTP 201，body.code=0
+# 管理员创建资源：预期 HTTP 201，body.code=0
 curl -i -X POST http://127.0.0.1:3000/api/admin/games \
   -H 'Authorization: Bearer <admin-token>' \
   -H 'Content-Type: application/json' \
-  -d '{"title":"示例游戏","developer":"Example Dev","publisher":"Example Pub","releaseDate":"2026-06-12","description":"示例简介","coverUrl":"/uploads/images/cover.png","categoryId":1,"tagIds":[1,2],"screenshots":[{"url":"/uploads/images/shot.png","sortOrder":0}]}'
+  -d '{"title":"示例资源","developer":"Example Dev","publisher":"Example Pub","releaseDate":"2026-06-12","description":"示例简介","coverUrl":"/uploads/images/cover.png","categoryId":1,"tagIds":[1,2],"screenshots":[{"url":"/uploads/images/shot.png","sortOrder":0}]}'
 
-# 管理员列表/更新/删除游戏：列表复用现有 GameListResponse；更新请求体同创建
+# 管理员列表/更新/删除资源：列表复用现有 GameListResponse；更新请求体同创建
 curl -i 'http://127.0.0.1:3000/api/admin/games?page=1&pageSize=12' \
   -H 'Authorization: Bearer <admin-token>'
 curl -i -X PUT http://127.0.0.1:3000/api/admin/games/1 \
   -H 'Authorization: Bearer <admin-token>' \
   -H 'Content-Type: application/json' \
-  -d '{"title":"示例游戏","developer":"Example Dev","publisher":"Example Pub","releaseDate":null,"description":"更新后的简介","coverUrl":"/uploads/images/cover.png","categoryId":1,"tagIds":[1],"screenshots":[]}'
+  -d '{"title":"示例资源","developer":"Example Dev","publisher":"Example Pub","releaseDate":null,"description":"更新后的简介","coverUrl":"/uploads/images/cover.png","categoryId":1,"tagIds":[1],"screenshots":[]}'
 curl -i -X DELETE http://127.0.0.1:3000/api/admin/games/1 \
   -H 'Authorization: Bearer <admin-token>'
 
