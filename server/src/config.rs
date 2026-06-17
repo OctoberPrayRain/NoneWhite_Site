@@ -23,6 +23,7 @@ pub struct UploadConfig {
     pub public_base_url: String,
     pub max_avatar_size_bytes: usize,
     pub max_image_size_bytes: usize,
+    pub max_resource_size_bytes: usize,
 }
 
 #[derive(Clone)]
@@ -90,6 +91,10 @@ impl AppConfig {
                     .ok()
                     .and_then(|value| value.parse::<usize>().ok())
                     .unwrap_or(5 * 1024 * 1024),
+                max_resource_size_bytes: env::var("MAX_RESOURCE_SIZE_BYTES")
+                    .ok()
+                    .and_then(|value| value.parse::<usize>().ok())
+                    .unwrap_or(50 * 1024 * 1024),
             },
             openlist: OpenListConfig {
                 token: env::var("OPENLIST_TOKEN").unwrap_or_default(),

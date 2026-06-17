@@ -10,7 +10,7 @@ pub mod routes;
 pub mod services;
 pub mod state;
 
-use axum::Router;
+use axum::{extract::DefaultBodyLimit, Router};
 use std::path::Path;
 use tokio::net::TcpListener;
 use tracing::info;
@@ -22,11 +22,13 @@ async fn main() {
 
     let config = config::AppConfig::from_env();
     let db_pool = db::create_pool(&config.database).expect("failed to create database pool");
+    let upload_body_limit_bytes = upload_body_limit_bytes(&config.upload);
     let address = config.server.address();
     let state = state::AppState { config, db_pool };
 
     let app = Router::new()
         .merge(routes::api_routes())
+        .layer(DefaultBodyLimit::max(upload_body_limit_bytes))
         .fallback(routes::not_found)
         .with_state(state);
     let listener = TcpListener::bind(&address)
@@ -37,6 +39,14 @@ async fn main() {
     axum::serve(listener, app)
         .await
         .expect("failed to start backend server");
+}
+
+fn upload_body_limit_bytes(upload_config: &config::UploadConfig) -> usize {
+    upload_config
+        .max_resource_size_bytes
+        .max(upload_config.max_image_size_bytes)
+        .max(upload_config.max_avatar_size_bytes)
+        .saturating_add(1024 * 1024)
 }
 
 fn load_env_files() {
@@ -104,6 +114,22 @@ mod tests {
         env::remove_var(&key);
         env::remove_var(&server_only_key);
         fs::remove_dir_all(temp_dir).expect("temp env dir should be removable");
+    }
+
+    #[test]
+    fn upload_body_limit_allows_multipart_overhead_above_largest_upload_limit() {
+        let upload_config = super::config::UploadConfig {
+            upload_dir: PathBuf::from("uploads"),
+            public_base_url: "/uploads".to_string(),
+            max_avatar_size_bytes: 2,
+            max_image_size_bytes: 5,
+            max_resource_size_bytes: 50,
+        };
+
+        assert_eq!(
+            super::upload_body_limit_bytes(&upload_config),
+            1024 * 1024 + 50
+        );
     }
 
     fn unique_env_key(prefix: &str) -> String {
