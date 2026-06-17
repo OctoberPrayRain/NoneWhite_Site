@@ -125,7 +125,7 @@ async function loadGames() {
   } catch (error) {
     games.value = []
     total.value = 0
-    errorMessage.value = error instanceof Error ? error.message : '游戏列表加载失败'
+    errorMessage.value = error instanceof Error ? error.message : '文件列表加载失败'
   } finally {
     loading.value = false
   }
@@ -170,9 +170,9 @@ watch(
 
 <template>
   <section class="page-heading games-heading">
-    <div class="eyebrow">所有游戏</div>
-    <h1>游戏列表</h1>
-    <p>浏览站内游戏条目，按分类和标签快速筛选，进入详情页查看简介、截图与基础信息。</p>
+    <div class="eyebrow">所有文件</div>
+    <h1>文件列表</h1>
+    <p>浏览站内文件条目，按分类和标签快速筛选，进入详情页查看简介、预览图与基础信息。</p>
   </section>
 
   <section class="game-list-page">
@@ -190,7 +190,7 @@ watch(
       {{ mockMessage }}
     </div>
 
-    <BaseLoading v-if="loading && !hasGames" text="正在加载游戏列表..." />
+    <BaseLoading v-if="loading && !hasGames" text="正在加载文件列表..." />
 
     <div v-else-if="errorMessage" class="status-panel is-error">
       <div class="status-header">
@@ -203,8 +203,8 @@ watch(
 
     <EmptyState
       v-else-if="!hasGames"
-      title="暂无游戏"
-      description="当前筛选条件下没有可展示的游戏，试试切换分类或标签。"
+      title="暂无文件"
+      description="当前筛选条件下没有可展示的文件，试试切换分类或标签。"
     >
       <template #action>
         <button class="secondary-button" type="button" @click="handleResetFilters">清空筛选</button>

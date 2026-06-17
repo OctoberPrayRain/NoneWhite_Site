@@ -116,7 +116,7 @@ async function loadGameDetail() {
     }
   } catch (error) {
     if (isCurrentGameDetailRequest(currentReqId, currentRouteId)) {
-      errorMessage.value = error instanceof Error ? error.message : '游戏详情加载失败'
+      errorMessage.value = error instanceof Error ? error.message : '文件详情加载失败'
     }
   } finally {
     if (isCurrentGameDetailRequest(currentReqId, currentRouteId)) {
@@ -135,20 +135,20 @@ watch(
 </script>
 
 <template>
-  <BaseLoading v-if="loading" text="正在加载游戏详情..." />
+  <BaseLoading v-if="loading" text="正在加载文件详情..." />
 
   <EmptyState
     v-else-if="errorMessage"
-    title="游戏不存在或暂时无法加载"
+    title="文件不存在或暂时无法加载"
     :description="errorMessage"
   >
     <template #action>
-      <RouterLink class="secondary-button" :to="backTarget">返回游戏列表</RouterLink>
+      <RouterLink class="secondary-button" :to="backTarget">返回文件列表</RouterLink>
     </template>
   </EmptyState>
 
   <article v-else-if="game" class="game-detail-page">
-    <RouterLink class="back-link" :to="backTarget">返回游戏列表</RouterLink>
+    <RouterLink class="back-link" :to="backTarget">返回文件列表</RouterLink>
 
     <div v-if="mockMessage" class="notice-box is-warning">
       {{ mockMessage }}
@@ -174,20 +174,20 @@ watch(
 
         <dl class="detail-meta">
           <div>
-            <dt>开发商</dt>
+            <dt>提供方</dt>
             <dd>{{ game.developer }}</dd>
           </div>
           <div>
-            <dt>发行商</dt>
+            <dt>发布方</dt>
             <dd>{{ game.publisher }}</dd>
           </div>
           <div>
-            <dt>发行日期</dt>
+            <dt>发布日期</dt>
             <dd>{{ game.releaseDate || '待确认' }}</dd>
           </div>
         </dl>
 
-        <div class="tag-list detail-tags" aria-label="游戏标签">
+        <div class="tag-list detail-tags" aria-label="文件标签">
           <span v-for="tag in game.tags" :key="tag.id">{{ tag.name }}</span>
         </div>
 
