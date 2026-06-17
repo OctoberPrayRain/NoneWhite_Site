@@ -42,7 +42,8 @@ async fn submit_game(
     Json(request): Json<CreateGameRequest>,
 ) -> AppResult<(StatusCode, Json<ApiResponse<GameResponse>>)> {
     let user_id = auth::authenticated_user_id(&headers, &state.config.auth)?;
-    let response = game_service::submit_game(&state.db_pool, user_id, request).await?;
+    let response =
+        game_service::submit_game(&state.db_pool, &state.config.openlist, user_id, request).await?;
 
     Ok((
         StatusCode::CREATED,

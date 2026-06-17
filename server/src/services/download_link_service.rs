@@ -190,6 +190,20 @@ pub(crate) fn validate_download_link_request(
     Ok(request)
 }
 
+pub(crate) fn validate_submission_download_link_request(
+    mut request: DownloadLinkRequest,
+    openlist_config: &OpenListConfig,
+    user_id: i64,
+) -> AppResult<DownloadLinkRequest> {
+    request.platform = required_text(request.platform)?;
+    request.url = validate_submission_download_url(request.url, openlist_config, user_id)?;
+    request.extract_code = optional_text(request.extract_code);
+    request.password = optional_text(request.password);
+    request.file_size = optional_text(request.file_size);
+
+    Ok(request)
+}
+
 fn required_text(value: String) -> AppResult<String> {
     let value = value.trim();
     if value.is_empty() {
@@ -205,6 +219,31 @@ fn validate_download_url(value: String) -> AppResult<String> {
 
     if is_openlist_url(&value) {
         return validate_openlist_marker(value);
+    }
+
+    if is_local_resource_url(&value) {
+        return validate_local_resource_marker(value);
+    }
+
+    if value.chars().any(char::is_control)
+        || !(normalized.starts_with("https://") || normalized.starts_with("http://"))
+    {
+        return Err(AppError::download_link_invalid());
+    }
+
+    Ok(value)
+}
+
+fn validate_submission_download_url(
+    value: String,
+    openlist_config: &OpenListConfig,
+    user_id: i64,
+) -> AppResult<String> {
+    let value = required_text(value)?;
+    let normalized = value.to_ascii_lowercase();
+
+    if is_openlist_url(&value) {
+        return validate_uploaded_openlist_resource_marker(value, openlist_config, user_id);
     }
 
     if is_local_resource_url(&value) {
@@ -250,6 +289,59 @@ fn validate_openlist_marker(value: String) -> AppResult<String> {
     }
 
     Ok(value)
+}
+
+fn validate_uploaded_openlist_resource_marker(
+    value: String,
+    openlist_config: &OpenListConfig,
+    user_id: i64,
+) -> AppResult<String> {
+    if user_id <= 0 {
+        return Err(AppError::download_link_invalid());
+    }
+
+    let value = validate_openlist_marker(value)?;
+    let upload_dir = validate_openlist_marker(openlist_config.resource_upload_dir.clone())?;
+    let prefix = format!("{upload_dir}/");
+    let file_name = value
+        .strip_prefix(&prefix)
+        .filter(|file_name| !file_name.contains('/'))
+        .ok_or_else(AppError::download_link_invalid)?;
+
+    if is_generated_resource_file_name_for_user(file_name, user_id) {
+        Ok(value)
+    } else {
+        Err(AppError::download_link_invalid())
+    }
+}
+
+fn is_generated_resource_file_name_for_user(file_name: &str, user_id: i64) -> bool {
+    if !upload_service::is_safe_file_name(file_name) {
+        return false;
+    }
+
+    let prefix = format!("resource-{user_id}-");
+    let Some(suffix) = file_name.strip_prefix(&prefix) else {
+        return false;
+    };
+    let (timestamp, extension) = suffix
+        .rsplit_once('.')
+        .map_or((suffix, None), |(timestamp, extension)| {
+            (timestamp, Some(extension))
+        });
+
+    if timestamp.is_empty() || !timestamp.chars().all(|ch| ch.is_ascii_digit()) {
+        return false;
+    }
+
+    match extension {
+        Some(extension) => {
+            !extension.is_empty()
+                && extension.len() <= 16
+                && extension.chars().all(|ch| ch.is_ascii_alphanumeric())
+        }
+        None => true,
+    }
 }
 
 fn validate_local_resource_marker(value: String) -> AppResult<String> {
@@ -531,6 +623,120 @@ mod tests {
     }
 
     #[test]
+    fn validate_submission_download_link_request_accepts_uploaded_openlist_marker_for_user() {
+        let request = validate_submission_download_link_request(
+            DownloadLinkRequest {
+                platform: "Uploaded resource".to_string(),
+                url: "openlist:/GoogleDrive/NoneWhite/resources/resource-42-1234567890.zip"
+                    .to_string(),
+                extract_code: None,
+                password: None,
+                file_size: Some("10 MiB".to_string()),
+            },
+            &openlist_config("openlist:/GoogleDrive/NoneWhite/resources"),
+            42,
+        )
+        .expect("generated marker under configured dir should pass for owner");
+
+        assert_eq!(
+            request.url,
+            "openlist:/GoogleDrive/NoneWhite/resources/resource-42-1234567890.zip"
+        );
+        assert_eq!(request.file_size.as_deref(), Some("10 MiB"));
+    }
+
+    #[test]
+    fn validate_submission_download_link_request_rejects_arbitrary_openlist_marker() {
+        let error = validate_submission_download_link_request(
+            DownloadLinkRequest {
+                platform: "Uploaded resource".to_string(),
+                url: "openlist:/GoogleDrive/private/secret.zip".to_string(),
+                extract_code: None,
+                password: None,
+                file_size: None,
+            },
+            &openlist_config("openlist:/GoogleDrive/NoneWhite/resources"),
+            42,
+        )
+        .expect_err("public submission should not persist arbitrary OpenList paths");
+
+        assert_eq!(error.code, 40015);
+    }
+
+    #[test]
+    fn validate_submission_download_link_request_rejects_openlist_marker_for_other_user() {
+        let error = validate_submission_download_link_request(
+            DownloadLinkRequest {
+                platform: "Uploaded resource".to_string(),
+                url: "openlist:/GoogleDrive/NoneWhite/resources/resource-7-1234567890.zip"
+                    .to_string(),
+                extract_code: None,
+                password: None,
+                file_size: None,
+            },
+            &openlist_config("openlist:/GoogleDrive/NoneWhite/resources"),
+            42,
+        )
+        .expect_err("public submission should only accept own generated upload markers");
+
+        assert_eq!(error.code, 40015);
+    }
+
+    #[test]
+    fn validate_submission_download_link_request_rejects_openlist_marker_outside_configured_dir() {
+        let error = validate_submission_download_link_request(
+            DownloadLinkRequest {
+                platform: "Uploaded resource".to_string(),
+                url: "openlist:/GoogleDrive/Other/resources/resource-42-1234567890.zip".to_string(),
+                extract_code: None,
+                password: None,
+                file_size: None,
+            },
+            &openlist_config("openlist:/GoogleDrive/NoneWhite/resources"),
+            42,
+        )
+        .expect_err("public submission should only accept configured upload dir markers");
+
+        assert_eq!(error.code, 40015);
+    }
+
+    #[test]
+    fn validate_submission_download_link_request_accepts_external_http_link() {
+        let request = validate_submission_download_link_request(
+            DownloadLinkRequest {
+                platform: "Mirror".to_string(),
+                url: " https://example.invalid/releases/file.zip ".to_string(),
+                extract_code: None,
+                password: None,
+                file_size: None,
+            },
+            &openlist_config("openlist:/GoogleDrive/NoneWhite/resources"),
+            42,
+        )
+        .expect("manual external links should remain valid for public submissions");
+
+        assert_eq!(request.url, "https://example.invalid/releases/file.zip");
+    }
+
+    #[test]
+    fn validate_submission_download_link_request_accepts_legacy_local_resource_marker() {
+        let request = validate_submission_download_link_request(
+            DownloadLinkRequest {
+                platform: "Uploaded resource".to_string(),
+                url: "/uploads/resources/resource-42-1234567890.zip".to_string(),
+                extract_code: None,
+                password: None,
+                file_size: None,
+            },
+            &openlist_config("openlist:/GoogleDrive/NoneWhite/resources"),
+            42,
+        )
+        .expect("legacy local resource markers should remain valid");
+
+        assert_eq!(request.url, "/uploads/resources/resource-42-1234567890.zip");
+    }
+
+    #[test]
     fn validate_download_url_accepts_openlist_google_drive_marker() {
         let url = "openlist:/GoogleDrive/abc123/file.zip".to_string();
         validate_download_url(url).expect("openlist:/GoogleDrive/... should be valid");
@@ -809,6 +1015,14 @@ mod tests {
             .expect_err("blank OpenList token should fail closed");
 
         assert_eq!(error.code, 50000);
+    }
+
+    fn openlist_config(resource_upload_dir: &str) -> OpenListConfig {
+        OpenListConfig {
+            base_url: "https://openlist.example".to_string(),
+            token: "openlist-token".to_string(),
+            resource_upload_dir: resource_upload_dir.to_string(),
+        }
     }
 
     #[test]

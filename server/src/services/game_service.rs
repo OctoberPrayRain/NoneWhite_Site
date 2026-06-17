@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use sqlx::{types::chrono::NaiveDate, PgPool};
 
 use crate::{
+    config::OpenListConfig,
     dto::games::{
         CategoryResponse, CreateGameRequest, GameListParams, GameListQuery, GameListResponse,
         GameResponse, ScreenshotResponse, TagResponse, UpdateGameRequest, ValidatedGameInput,
@@ -118,15 +119,50 @@ pub async fn get_game_detail(pool: &PgPool, id: i64) -> AppResult<GameResponse> 
 }
 
 pub async fn create_game(pool: &PgPool, request: CreateGameRequest) -> AppResult<GameResponse> {
-    create_game_with_approval(pool, request, APPROVAL_STATUS_APPROVED, None).await
+    let download_links = request
+        .download_links
+        .clone()
+        .into_iter()
+        .map(download_link_service::validate_download_link_request)
+        .collect::<AppResult<Vec<_>>>()?;
+
+    create_game_with_approval(
+        pool,
+        request,
+        APPROVAL_STATUS_APPROVED,
+        None,
+        download_links,
+    )
+    .await
 }
 
 pub async fn submit_game(
     pool: &PgPool,
+    openlist_config: &OpenListConfig,
     user_id: i64,
     request: CreateGameRequest,
 ) -> AppResult<GameResponse> {
-    create_game_with_approval(pool, request, APPROVAL_STATUS_PENDING, Some(user_id)).await
+    let download_links = request
+        .download_links
+        .clone()
+        .into_iter()
+        .map(|download_link| {
+            download_link_service::validate_submission_download_link_request(
+                download_link,
+                openlist_config,
+                user_id,
+            )
+        })
+        .collect::<AppResult<Vec<_>>>()?;
+
+    create_game_with_approval(
+        pool,
+        request,
+        APPROVAL_STATUS_PENDING,
+        Some(user_id),
+        download_links,
+    )
+    .await
 }
 
 async fn create_game_with_approval(
@@ -134,13 +170,8 @@ async fn create_game_with_approval(
     request: CreateGameRequest,
     approval_status: &str,
     submitted_by_user_id: Option<i64>,
+    download_links: Vec<crate::dto::download_links::DownloadLinkRequest>,
 ) -> AppResult<GameResponse> {
-    let download_links = request
-        .download_links
-        .clone()
-        .into_iter()
-        .map(download_link_service::validate_download_link_request)
-        .collect::<AppResult<Vec<_>>>()?;
     let input = validate_game_input(request)?;
     ensure_category_exists(pool, input.category_id).await?;
     let tag_names = ensure_tags_exist(pool, &input.tag_ids).await?;
