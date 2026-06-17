@@ -28,14 +28,18 @@ pub struct UploadConfig {
 
 #[derive(Clone)]
 pub struct OpenListConfig {
+    pub base_url: String,
     pub token: String,
+    pub resource_upload_dir: String,
 }
 
 impl fmt::Debug for OpenListConfig {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("OpenListConfig")
+            .field("base_url", &self.base_url)
             .field("token", &"<redacted>")
+            .field("resource_upload_dir", &self.resource_upload_dir)
             .finish()
     }
 }
@@ -52,6 +56,16 @@ pub struct AppConfig {
 impl ServerConfig {
     pub fn address(&self) -> String {
         format!("{}:{}", self.host, self.port)
+    }
+}
+
+impl OpenListConfig {
+    fn from_env() -> Self {
+        Self {
+            base_url: env::var("OPENLIST_BASE_URL").unwrap_or_default(),
+            token: env::var("OPENLIST_TOKEN").unwrap_or_default(),
+            resource_upload_dir: env::var("OPENLIST_RESOURCE_UPLOAD_DIR").unwrap_or_default(),
+        }
     }
 }
 
@@ -96,9 +110,7 @@ impl AppConfig {
                     .and_then(|value| value.parse::<usize>().ok())
                     .unwrap_or(50 * 1024 * 1024),
             },
-            openlist: OpenListConfig {
-                token: env::var("OPENLIST_TOKEN").unwrap_or_default(),
-            },
+            openlist: OpenListConfig::from_env(),
         }
     }
 }
@@ -132,15 +144,73 @@ pub fn server_address() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn openlist_config_debug_redacts_token() {
         let config = OpenListConfig {
+            base_url: "https://openlist.example".to_string(),
             token: "secret-openlist-token".to_string(),
+            resource_upload_dir: "openlist:/GoogleDrive/uploads".to_string(),
         };
         let output = format!("{config:?}");
 
         assert!(output.contains("<redacted>"));
         assert!(!output.contains("secret-openlist-token"));
+    }
+
+    #[test]
+    fn openlist_config_loads_base_url_token_and_resource_upload_dir_from_env() {
+        let _guard = ENV_LOCK.lock().expect("env lock should not be poisoned");
+        const BASE_URL: &str = "OPENLIST_BASE_URL";
+        const TOKEN: &str = "OPENLIST_TOKEN";
+        const UPLOAD_DIR: &str = "OPENLIST_RESOURCE_UPLOAD_DIR";
+        let previous_base_url = env::var(BASE_URL).ok();
+        let previous_token = env::var(TOKEN).ok();
+        let previous_upload_dir = env::var(UPLOAD_DIR).ok();
+
+        env::set_var(BASE_URL, "https://openlist.example");
+        env::set_var(TOKEN, "upload-token");
+        env::set_var(UPLOAD_DIR, "openlist:/GoogleDrive/uploads");
+        let config = OpenListConfig::from_env();
+        restore_env(BASE_URL, previous_base_url);
+        restore_env(TOKEN, previous_token);
+        restore_env(UPLOAD_DIR, previous_upload_dir);
+
+        assert_eq!(config.base_url, "https://openlist.example");
+        assert_eq!(config.token, "upload-token");
+        assert_eq!(config.resource_upload_dir, "openlist:/GoogleDrive/uploads");
+    }
+
+    #[test]
+    fn openlist_config_defaults_to_blank_fields_without_failing_startup() {
+        let _guard = ENV_LOCK.lock().expect("env lock should not be poisoned");
+        const BASE_URL: &str = "OPENLIST_BASE_URL";
+        const TOKEN: &str = "OPENLIST_TOKEN";
+        const UPLOAD_DIR: &str = "OPENLIST_RESOURCE_UPLOAD_DIR";
+        let previous_base_url = env::var(BASE_URL).ok();
+        let previous_token = env::var(TOKEN).ok();
+        let previous_upload_dir = env::var(UPLOAD_DIR).ok();
+
+        env::remove_var(BASE_URL);
+        env::remove_var(TOKEN);
+        env::remove_var(UPLOAD_DIR);
+        let config = OpenListConfig::from_env();
+        restore_env(BASE_URL, previous_base_url);
+        restore_env(TOKEN, previous_token);
+        restore_env(UPLOAD_DIR, previous_upload_dir);
+
+        assert!(config.base_url.is_empty());
+        assert!(config.token.is_empty());
+        assert!(config.resource_upload_dir.is_empty());
+    }
+
+    fn restore_env(key: &str, value: Option<String>) {
+        match value {
+            Some(value) => env::set_var(key, value),
+            None => env::remove_var(key),
+        }
     }
 }
