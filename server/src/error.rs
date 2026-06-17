@@ -99,6 +99,14 @@ impl AppError {
         Self::new(StatusCode::BAD_REQUEST, 40015, "Download link is invalid")
     }
 
+    pub const fn resource_file_required() -> Self {
+        Self::new(StatusCode::BAD_REQUEST, 40016, "Resource file is required")
+    }
+
+    pub const fn resource_file_too_large() -> Self {
+        Self::new(StatusCode::BAD_REQUEST, 40017, "Resource file is too large")
+    }
+
     pub const fn invalid_credentials() -> Self {
         Self::new(StatusCode::UNAUTHORIZED, 40101, "Invalid email or password")
     }
