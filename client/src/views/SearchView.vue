@@ -143,15 +143,15 @@ watch(
 <template>
   <section class="page-heading search-heading">
     <div class="eyebrow">全站搜索</div>
-    <h1>搜索游戏</h1>
-    <p>通过标题、开发商、发行商或标签搜索您感兴趣的游戏。</p>
+    <h1>搜索文件</h1>
+    <p>通过标题、提供方、发布方或标签搜索您感兴趣的文件。</p>
   </section>
 
   <section class="search-page">
     <form class="search-panel" @submit.prevent="handleSubmit">
       <label class="form-field">
         <span>关键词</span>
-        <input v-model="keywordInput" type="search" placeholder="例如：雨后 / NoneWhite / 校园" />
+        <input v-model="keywordInput" type="search" placeholder="例如：模板 / NoneWhite / 文档" />
       </label>
       <button class="primary-button" type="submit" :disabled="loading">搜索</button>
     </form>
@@ -160,7 +160,7 @@ watch(
       {{ mockMessage }}
     </div>
 
-    <BaseLoading v-if="loading" text="正在搜索游戏..." />
+    <BaseLoading v-if="loading" text="正在搜索文件..." />
 
     <div v-else-if="errorMessage" class="status-panel is-error">
       <div class="status-header">
@@ -174,13 +174,13 @@ watch(
     <EmptyState
       v-else-if="!searched"
       title="输入关键词开始搜索"
-      description="输入游戏名称、开发商、发行商或标签，快速找到感兴趣的作品。"
+      description="输入文件名称、提供方、发布方或标签，快速找到感兴趣的作品。"
     />
 
     <EmptyState
       v-else-if="!hasGames"
       title="没有匹配结果"
-      :description="`没有找到与「${keyword}」相关的游戏。`"
+      :description="`没有找到与「${keyword}」相关的文件。`"
     />
 
     <template v-else>
