@@ -350,8 +350,76 @@ if (/:href=\"link\.url\"/.test(gameDetailViewSrc)) {
   fail('Download card must keep a functional download target')
 }
 
+if (/\/uploads\/resources/.test(gameDetailViewSrc) || /\{\{\s*link\.url\s*\}\}/.test(gameDetailViewSrc)) {
+   err('Game detail exposes raw upload resource marker')
+   fail('Game detail exposes raw upload resource marker')
+} else {
+   pass('Game detail does not expose raw resource markers')
+}
+
 /* ------------------------------------------------------------------ */
-/*  8. Visual system contract                                         */
+/*  9. Upload APIs and Forms contracts                                */
+/* ------------------------------------------------------------------ */
+console.log('\n--- Upload APIs and Forms contracts ---')
+
+if (/export\s+async\s+function\s+uploadUserImage\s*\(/.test(gamesApiSrc)) {
+  pass('Games API exports uploadUserImage')
+} else {
+  err('Games API missing uploadUserImage')
+  fail('Missing uploadUserImage API')
+}
+
+if (/export\s+async\s+function\s+uploadUserResource\s*\(/.test(gamesApiSrc)) {
+  pass('Games API exports uploadUserResource')
+} else {
+  err('Games API missing uploadUserResource')
+  fail('Missing uploadUserResource API')
+}
+
+let submitViewSrc = ''
+try {
+  submitViewSrc = fs.readFileSync(path.join(CLIENT, 'src', 'views', 'SubmitGameView.vue'), 'utf8')
+  if (/downloadLinks\s*:/.test(submitViewSrc)) {
+    pass('Submit payload includes downloadLinks')
+  } else {
+    err('Submit payload missing downloadLinks')
+    fail('Submit payload missing downloadLinks')
+  }
+
+  if (/\{\{\s*link\.url\s*\}\}/.test(submitViewSrc)) {
+    err('SubmitGameView exposes link.url directly in template')
+    fail('SubmitGameView exposes link.url directly in template')
+  } else {
+    pass('SubmitGameView does not expose raw link.url in template')
+  }
+
+  if (/formatFileSize/.test(submitViewSrc)) {
+    pass('SubmitGameView uses formatFileSize for resource sizes')
+  } else {
+    err('SubmitGameView missing formatFileSize usage')
+    fail('SubmitGameView missing formatFileSize usage')
+  }
+} catch {
+  err('Could not read SubmitGameView.vue for upload checks')
+  fail('Missing SubmitGameView.vue')
+}
+
+if (/uploadResource|uploadAdminResource|uploadUserResource/.test(adminViewSrc)) {
+    pass('Admin resource upload is wired in AdminConsoleView.vue')
+} else {
+    err('Admin resource upload not wired')
+    fail('Admin resource upload not wired')
+}
+
+if (/formatFileSize/.test(adminViewSrc)) {
+  pass('AdminConsoleView uses formatFileSize for resource sizes')
+} else {
+  err('AdminConsoleView missing formatFileSize usage')
+  fail('AdminConsoleView missing formatFileSize usage')
+}
+
+/* ------------------------------------------------------------------ */
+/*  10. Visual system contract                                         */
 /* ------------------------------------------------------------------ */
 console.log('\n--- Visual system contract ---')
 

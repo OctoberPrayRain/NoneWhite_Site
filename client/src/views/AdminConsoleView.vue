@@ -13,8 +13,9 @@ import {
   adminUpdateDownloadLink,
   adminUpdateGame,
   uploadImage,
+  uploadAdminResource,
 } from '../api/admin'
-import { getCategories, getTags } from '../api/games'
+import { getCategories, getTags, formatFileSize } from '../api/games'
 import { deleteComment, getComments } from '../api/interactions'
 import BaseLoading from '../components/common/BaseLoading.vue'
 import EmptyState from '../components/common/EmptyState.vue'
@@ -47,6 +48,29 @@ const editingDownloadLinkId = ref(null)
 const isAdmin = computed(() => currentUser.value?.role === 'admin')
 const selectedGame = computed(() => games.value.find((game) => String(game.id) === String(selectedGameId.value)) || null)
 const hasGames = computed(() => games.value.length > 0)
+
+const LOCAL_RESOURCE_PREFIX = '/uploads/resources/'
+
+function isLocalResourceMarker(url) {
+  return typeof url === 'string' && url.startsWith(LOCAL_RESOURCE_PREFIX)
+}
+
+function displayDownloadUrl(link) {
+  if (!isLocalResourceMarker(link.url)) {
+    return link.url
+  }
+  if (selectedGameId.value) {
+    return `/api/games/${selectedGameId.value}/download-links/${link.id}/download`
+  }
+  return '已上传资源，将通过受控下载接口发布'
+}
+
+const downloadFormUrlDisplay = computed(() => {
+  if (isLocalResourceMarker(downloadForm.value.url)) {
+    return '已上传资源，将通过受控下载接口发布'
+  }
+  return downloadForm.value.url
+})
 
 const emptyGameForm = () => ({
   title: '',
@@ -412,6 +436,50 @@ async function handleUploadImage(event, target) {
   }
 }
 
+async function handleUploadResource(event) {
+  const file = event.target.files?.[0]
+  event.target.value = ''
+
+  if (!file) {
+    return
+  }
+
+  const targetGameId = selectedGameId.value
+  const targetEditingDownloadLinkId = editingDownloadLinkId.value
+  const targetForm = downloadForm.value
+  const currentRequestId = ++resourceRequestId
+
+  resourceLoading.value = true
+  errorMessage.value = ''
+
+  try {
+    const result = await uploadAdminResource(file, authToken.value)
+
+    if (!isCurrentDownloadMutation(currentRequestId, targetGameId, targetEditingDownloadLinkId, targetForm)) {
+      return
+    }
+
+    downloadForm.value.url = result.resourceUrl
+    if (!downloadForm.value.platform) {
+      downloadForm.value.platform = '资源文件'
+    }
+    if (!downloadForm.value.fileSize && result.fileSize) {
+      downloadForm.value.fileSize = formatFileSize(result.fileSize)
+    }
+
+    successMessage.value = '资源文件上传成功，已填入表单。'
+  } catch (error) {
+    if (isCurrentDownloadMutation(currentRequestId, targetGameId, targetEditingDownloadLinkId, targetForm)) {
+      errorMessage.value = toErrorMessage(error, '资源文件上传失败')
+    }
+  } finally {
+    if (currentRequestId === resourceRequestId && selectedGameId.value === targetGameId) {
+      resourceLoading.value = false
+    }
+  }
+}
+
+
 function editDownloadLink(link) {
   editingDownloadLinkId.value = link.id
   downloadForm.value = {
@@ -689,7 +757,8 @@ onMounted(bootstrap)
             </label>
             <label class="form-field">
               <span>URL</span>
-              <input v-model="downloadForm.url" required placeholder="https://example.invalid/share" :disabled="resourceLoading || !selectedGameId" />
+              <input v-if="!isLocalResourceMarker(downloadForm.url)" v-model="downloadForm.url" required placeholder="https://example.invalid/share" :disabled="resourceLoading || !selectedGameId" />
+              <input v-else :value="downloadFormUrlDisplay" required disabled class="muted-text" />
             </label>
             <label class="form-field">
               <span>提取码</span>
@@ -704,6 +773,10 @@ onMounted(bootstrap)
               <input v-model="downloadForm.fileSize" placeholder="1.2 GiB" :disabled="resourceLoading || !selectedGameId" />
             </label>
             <div class="admin-actions">
+              <label class="secondary-button file-button">
+                上传资源文件
+                <input type="file" :disabled="resourceLoading || !selectedGameId" @change="handleUploadResource" />
+              </label>
               <button class="primary-button" type="submit" :disabled="resourceLoading || !selectedGameId">
                 {{ editingDownloadLinkId ? '更新链接' : '新增链接' }}
               </button>
@@ -716,7 +789,8 @@ onMounted(bootstrap)
             <p v-else-if="downloadLinks.length === 0" class="muted-text">当前文件暂无下载链接。</p>
             <div v-for="link in downloadLinks" v-else :key="link.id" class="admin-resource-card">
               <strong>{{ link.platform }}</strong>
-              <a :href="link.url" target="_blank" rel="noreferrer">{{ link.url }}</a>
+              <a v-if="!isLocalResourceMarker(link.url)" :href="link.url" target="_blank" rel="noreferrer">{{ link.url }}</a>
+              <span v-else class="muted-text">{{ displayDownloadUrl(link) }}</span>
               <span>提取码：{{ link.extractCode || '无' }} · 密码：{{ link.password || '无' }} · {{ link.fileSize || '未标注大小' }}</span>
               <div class="admin-actions">
                 <button class="secondary-button" type="button" :disabled="resourceLoading" @click="editDownloadLink(link)">编辑</button>
